@@ -53,7 +53,7 @@ def arg_parser():
 def main():
     global app
     args = arg_parser()
-    app.run(debug=True)
+    app.run(host=args.listening, port=args.port, debug=True)
 
 if __name__ == '__main__':
     main()
