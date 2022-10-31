@@ -1,25 +1,30 @@
 '''
     Interfaces para el acceso a la API rest del servicio de blobs
 '''
+from urllib import request
 import requests
 import json
+import server
+
+
+
 class BlobService:
     '''Cliente de acceso al servicio de blobbing'''
     def __init__(self,uri,timeout=120):
-        raise NotImplementedError()
+        self.uri=uri
+        self.timeout=timeout
 
     def new_blob(self, local_filename, user):
         '''Crea un nuevo blob usando el usuario establecido'''
-        
-        raise NotImplementedError()
+        resp= requests.put(self.uri+'/v1/blob', data={'user':user})
 
     def get_blob(self, blob_id, user):
         '''Obtiene un blob usando el usuario indicado'''
-        raise NotImplementedError()
+        resp= requests.get(self.uri+'/v1/blob/<int:blob_id>'+str(blob_id), data={'user':user})
 
     def remove_blob(self, blob_id, user):
         '''Intenta eliminar un blob usando el usuario dado'''
-        raise NotImplementedError()
+        resp= requests.delete(self.uri+'/v1/blob/<int:blob_id>'+str(blob_id), data={'user':user})
 
 
 class Blob:
@@ -46,24 +51,28 @@ class Blob:
 
     def add_read_permission_to(self, user):
         '''Permite al usuario dado leer el blob'''
-        raise NotImplementedError()
+        resp= request.put(self.uri+'/v1/blob/<int:blob_id>/readable_by/', data={'user':user})
 
     def revoke_read_permission_to(self, user):
         '''Elimina al usuario dado de la lista de permiso de lectura'''
-        raise NotImplementedError()
+        resp= requests.delete(self.uri+'/v1/blob/<int:blob_id>/readable_by/', data={'user':user})
 
     def add_write_permission_to(self, user):
         '''Permite al usuario dado escribir el blob'''
-        raise NotImplementedError()
+        resp= request.put(self.uri+'/v1/blob/<int:blob_id>/writable_by/', data={'user':user})
 
     def revoke_write_permission_to(self, user):
         '''Elimina al usuario dado de la lista de permiso de escritura'''
-        raise NotImplementedError()
+        resp= requests.delete(self.uri+'/v1/blob/<int:blob_id>/writable_by/', data={'user':user})
 
 
 
 def main():
     '''Funcion principal'''
+    # Creamos un cliente para el servicio de blobbing
+    client = BlobService('http://0.0.0.0:3002')
+    client.new_blob('test.txt', 'user1')
+    cabeceras={'user-token': 'admin' , 'user-token': 'user' } 
     pass
 
 if __name__ == '__main__':
