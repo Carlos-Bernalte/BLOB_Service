@@ -1,4 +1,5 @@
 '''Crear base de datos para almacenar blobs con permisos de lectura y escritura'''
+from cgi import print_arguments
 import sqlite3
 import os
 import sys
@@ -9,25 +10,28 @@ class BlobDB():
         '''Inicializar base de datos'''
         self.db_path = db_path
         if not os.path.isfile(db_path):
-            BlobDB._create_db()
+            self._create_db()
 
     def _create_db(self):
         '''Crear base de datos'''
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        c.execute('''CREATE TABLE blobs (id INTEGER PRIMARY KEY, string path)''')
-        c.execute('''CREATE TABLE permissions (blob_id INTEGER, user_id INTEGER, readable_by INTEGER, writable_by INTEGER)''')
+        '''Si no existe la base de datos, crearla'''
+        c.execute('''CREATE TABLE blobs (id INTEGER PRIMARY KEY, path TEXT)''')
+        c.execute('''CREATE TABLE permissions (id INTEGER PRIMARY KEY, blob_id INTEGER, user_id INTEGER, readable_by INTEGER, writable_by INTEGER)''')
         conn.commit()
         conn.close()
 
-    def add_blob(self, path, user):
+    def add_blob(self, path_file, user):
         '''Agregar blob a la base de datos'''
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        c.execute('''INSERT INTO blobs (path) VALUES (?)''', (path,))
+        c.execute('''INSERT INTO blobs (path) VALUES (?)''', (path_file,))
         conn.commit()
         c.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (c.lastrowid, user, 1, 1))
+        conn.commit()
         conn.close()
+        return c.lastrowid
 
     def remove_blob(self, blob_id):
         '''Eliminar blob de la base de datos'''

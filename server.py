@@ -4,24 +4,34 @@
     Implementacion ejemplo de servidor y servicio REST para el servicio de blobs
 '''
 from flask import Flask, make_response, request
+import os
 import argparse
+from blob.blob import BlobDB
 
 app = Flask(__name__)
 
+
 @app.route('/v1/blob/<int:blob_id>', methods=['GET'])
-def get_blob(blob_id, user):
+def get_blob(blob_id):
     raise NotImplementedError()
 
 @app.route('/v1/blob', methods=['PUT'])
 def new_blob():
-    raise NotImplementedError()
+    if not request.is_json:
+        return make_response('Missing JSON', 400)
+    if 'blob' not in request.get_json():
+        return make_response('Missing "element" key', 400)
+    blob = request.get_json()['blob']
+    db.add_blob(blob['path'], 1)
+    return make_response('OK', 200)
+
 
 @app.route('/v1/blob/<int:blob_id>', methods=['DELETE'])
-def remove_blob(blob_id, user):
+def remove_blob(blob_id):
     raise NotImplementedError()
 
 @app.route('/v1/blob/<int:blob_id>', methods=['POST'])
-def update_blob(blob_id, user):
+def update_blob(blob_id):
     raise NotImplementedError()
 
 @app.route('/v1/blob/<int:blob_id>/writable_by/<int:user>', methods=['PUT'])
@@ -52,7 +62,14 @@ def arg_parser():
 
 def main():
     global app
+    global db
+
     args = arg_parser()
+    if not os.path.exists(args.storage):
+        os.makedirs(args.storage)
+
+    db = BlobDB(args.db)
+
     app.run(host=args.listening, port=args.port, debug=True)
 
 if __name__ == '__main__':
