@@ -1,16 +1,16 @@
-#!/usr/bin/env python3
+'''Crear base de datos para almacenar blobs'''
+import sqlite3
+import os
+import sys
 
-'''
-    Implementacion del servicio Blob
-'''
-
-class Blob:
-    '''Implementa todas las operaciones sobre un objeto tipo Blob()'''
-
-    def __init__(self):
-        self.id = None
-        self.ubi = None
-        self.readable_by = []
-        self.writable_by = []
-
+def create_db():
+    '''Crear base de datos'''
+    conn = sqlite3.connect('blob.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE blob
+                 (id integer primary key, blob blob)''')
+    conn.commit()
+    conn.close()
     
+
+
