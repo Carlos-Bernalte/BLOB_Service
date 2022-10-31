@@ -3,7 +3,6 @@
 '''
 import requests
 import json
-
 class BlobService:
     '''Cliente de acceso al servicio de blobbing'''
     def __init__(self,uri,timeout=120):
@@ -11,6 +10,7 @@ class BlobService:
 
     def new_blob(self, local_filename, user):
         '''Crea un nuevo blob usando el usuario establecido'''
+        
         raise NotImplementedError()
 
     def get_blob(self, blob_id, user):
