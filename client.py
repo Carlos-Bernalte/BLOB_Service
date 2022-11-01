@@ -1,12 +1,18 @@
 '''
     Interfaces para el acceso a la API rest del servicio de blobs
 '''
+from email import header
 from urllib import request
 import requests
 import json
 import server
 
-
+headersList1 = {
+ "user-token": "123"
+}
+headersList2 = {
+ "admin token": "1234"
+}
 
 class BlobService:
     '''Cliente de acceso al servicio de blobbing'''
@@ -16,15 +22,19 @@ class BlobService:
 
     def new_blob(self, local_filename, user):
         '''Crea un nuevo blob usando el usuario establecido'''
-        resp= requests.put(self.uri+'/v1/blob', data={'user':user})
+        payload = json.dumps({"path": "nombre.txt"})
+        response = requests.request("PUT", self.uri+'/v1/blob', data=payload,  headers=headersList1)
+        print (response.text)
 
     def get_blob(self, blob_id, user):
         '''Obtiene un blob usando el usuario indicado'''
-        resp= requests.get(self.uri+'/v1/blob/<int:blob_id>'+str(blob_id), data={'user':user})
+        response = requests.request("GET", self.uri+'/v1/blob' ,  headers=headersList1)
+        print (response.text)
 
     def remove_blob(self, blob_id, user):
         '''Intenta eliminar un blob usando el usuario dado'''
-        resp= requests.delete(self.uri+'/v1/blob/<int:blob_id>'+str(blob_id), data={'user':user})
+        response = requests.request("DELETE", self.uri+'/v1/blob' ,  headers=headersList1)
+        print (response.text)
 
 
 class Blob:
@@ -51,19 +61,24 @@ class Blob:
 
     def add_read_permission_to(self, user):
         '''Permite al usuario dado leer el blob'''
-        resp= request.put(self.uri+'/v1/blob/<int:blob_id>/readable_by/', data={'user':user})
+        response = requests.request("PUT", self.uri+'/v1/blob/<int:blob_id>/readable_by/',  headers=headersList1)
+        print (response.text)
 
     def revoke_read_permission_to(self, user):
         '''Elimina al usuario dado de la lista de permiso de lectura'''
-        resp= requests.delete(self.uri+'/v1/blob/<int:blob_id>/readable_by/', data={'user':user})
+        response= requests.delete(self.uri+'/v1/blob/<int:blob_id>/readable_by/',  headers=headersList1)
+        print (response.text)
 
     def add_write_permission_to(self, user):
         '''Permite al usuario dado escribir el blob'''
-        resp= request.put(self.uri+'/v1/blob/<int:blob_id>/writable_by/', data={'user':user})
+        response= requests.put(self.uri+'/v1/blob/<int:blob_id>/writable_by/', headers=headersList1)
+        print (response.text)
+
 
     def revoke_write_permission_to(self, user):
         '''Elimina al usuario dado de la lista de permiso de escritura'''
-        resp= requests.delete(self.uri+'/v1/blob/<int:blob_id>/writable_by/', data={'user':user})
+        response= requests.delete(self.uri+'/v1/blob/<int:blob_id>/writable_by/', headers=headersList1)
+        print (response.text)
 
 
 
@@ -72,7 +87,6 @@ def main():
     # Creamos un cliente para el servicio de blobbing
     client = BlobService('http://0.0.0.0:3002')
     client.new_blob('test.txt', 'user1')
-    cabeceras={'user-token': 'admin' , 'user-token': 'user' } 
     pass
 
 if __name__ == '__main__':
