@@ -49,15 +49,22 @@ class Blob:
     @property
     def is_online(self):
         '''Comprueba si el blob existe'''
-        raise NotImplementedError()
+        if self==None:
+            return False
+        else:
+            if (response = requests.request("GET", self.uri+'/v1/blob' ,  headers=headersList1)==200):
+                return True
 
     def dump_to(self, local_filename):
         '''Vuelca los datos del blob en un archivo local'''
-        raise NotImplementedError()
+        response = requests.request("GET", self.uri+'/v1/blob' ,  headers=headersList1)
+        getBlob = requests.get(self.uri+'/v1/blob/<int:blob_id>')
+        open("/dumps/<int:blob_id>", "wb").write(getBlob.content)
 
     def refresh_from(self, local_filename):
         '''Reemplaza el blob por el contenido del fichero local'''
-        raise NotImplementedError()
+        response = requests.request("PUT", self.uri+'/v1/blob/<int:blob_id>',  headers=headersList1)
+        refreshFrom= requests.put(self.uri+'/v1/blob/<int:blob_id>', data=open("/dumps/<int:blob_id>", "rb"))
 
     def add_read_permission_to(self, user):
         '''Permite al usuario dado leer el blob'''
