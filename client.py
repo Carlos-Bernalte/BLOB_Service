@@ -5,7 +5,6 @@ from email import header
 from urllib import request
 import requests
 import json
-import server
 
 headersList1 = {
  "user-token": "123"
@@ -32,7 +31,6 @@ class BlobService:
         '''Crea un nuevo blob usando el usuario establecido'''
         payload = json.dumps({"path": "nombre.txt"})
         response = requests.request("PUT", self.uri+'/v1/blob', data=payload,  headers=headersList1)
-        timeout=self.timeout
         if response.status_code != 200:
             raise RestListError(f'Unexpected status code: {response.status_code}')
         else:
@@ -41,7 +39,6 @@ class BlobService:
     def get_blob(self, blob_id, user):
         '''Obtiene un blob usando el usuario indicado'''
         response = requests.request("GET", self.uri+'/v1/blob' ,  headers=headersList1)
-        timeout=self.timeout
         if response.status_code != 200:
             raise RestListError(f'Unexpected status code: {response.status_code}')
         else:
@@ -50,7 +47,6 @@ class BlobService:
     def remove_blob(self, blob_id, user):
         '''Intenta eliminar un blob usando el usuario dado'''
         response = requests.request("DELETE", self.uri+'/v1/blob' ,  headers=headersList1)
-        timeout=self.timeout
         if response.status_code != 200:
             raise RestListError(f'Unexpected status code: {response.status_code}')
         else:
@@ -74,21 +70,18 @@ class Blob:
             return False
         else:
             if (requests.request("GET", self.uri+'/v1/blob' ,  headers=headersList1)==200):
-                timeout=self.timeout
                 return True
 
     def dump_to(self, local_filename):
         '''Vuelca los datos del blob en un archivo local'''
         response = requests.request("GET", self.uri+'/v1/blob' ,  headers=headersList1)
         getBlob = requests.get(self.uri+'/v1/blob/<int:blob_id>') 
-        timeout=self.timeout
         open("/dumps/<int:blob_id>", "wb").write(getBlob.content)
 
     def refresh_from(self, local_filename):
         '''Reemplaza el blob por el contenido del fichero local'''
         response = requests.request("PUT", self.uri+'/v1/blob/<int:blob_id>',  headers=headersList1)
         refreshFrom= requests.put(self.uri+'/v1/blob/<int:blob_id>', data=open("/dumps/<int:blob_id>", "rb"))
-        timeout=self.timeout
         if response.status_code != 200:
             raise RestListError(f'Unexpected status code: {response.status_code}')
         else:
@@ -97,7 +90,6 @@ class Blob:
     def add_read_permission_to(self, user):
         '''Permite al usuario dado leer el blob'''
         response = requests.request("PUT", self.uri+'/v1/blob/<int:blob_id>/readable_by/',  headers=headersList1)
-        timeout=self.timeout
         if response.status_code != 200:
             raise RestListError(f'Unexpected status code: {response.status_code}')
         else:
@@ -106,7 +98,6 @@ class Blob:
     def revoke_read_permission_to(self, user):
         '''Elimina al usuario dado de la lista de permiso de lectura'''
         response= requests.delete(self.uri+'/v1/blob/<int:blob_id>/readable_by/',  headers=headersList1)
-        timeout=self.timeout
         if response.status_code != 200:
             raise RestListError(f'Unexpected status code: {response.status_code}')
         else:
@@ -115,7 +106,6 @@ class Blob:
     def add_write_permission_to(self, user):
         '''Permite al usuario dado escribir el blob'''
         response= requests.put(self.uri+'/v1/blob/<int:blob_id>/writable_by/', headers=headersList1)
-        timeout=self.timeout
         if response.status_code != 200:
             raise RestListError(f'Unexpected status code: {response.status_code}')
         else:
@@ -125,7 +115,6 @@ class Blob:
     def revoke_write_permission_to(self, user):
         '''Elimina al usuario dado de la lista de permiso de escritura'''
         response= requests.delete(self.uri+'/v1/blob/<int:blob_id>/writable_by/', headers=headersList1)
-        timeout=self.timeout
         if response.status_code != 200:
             raise RestListError(f'Unexpected status code: {response.status_code}')
         else:
