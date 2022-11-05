@@ -1,16 +1,19 @@
 '''Crear base de datos para almacenar blobs con permisos de lectura y escritura'''
-from cgi import print_arguments
+
 import sqlite3
 import os
 import sys
 
 class BlobDB():
 
-    def __init__(self, db_path):
+    def __init__(self, db_path, storage_path):
         '''Inicializar base de datos'''
         self.db_path = db_path
-        if not os.path.isfile(db_path):
+        self.storage_path = storage_path
+        if not os.path.exists(self.db_path):
             self._create_db()
+        if not os.path.exists(self.storage_path):
+            os.makedirs(self.storage_path)
 
     def _create_db(self):
         '''Crear base de datos'''
@@ -22,25 +25,39 @@ class BlobDB():
         conn.commit()
         conn.close()
 
-    def add_blob(self, path_file, user):
-        '''Agregar blob a la base de datos'''
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        c.execute('''INSERT INTO blobs (path) VALUES (?)''', (path_file,))
-        conn.commit()
-        c.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (c.lastrowid, user, 1, 1))
-        conn.commit()
-        conn.close()
-        return c.lastrowid
 
+    def add_blob(self, blob, user):
+
+        '''Agregar blob a la base de datos'''
+        try:
+            print('BLob: ', blob)
+            conn = sqlite3.connect(self.db_path)
+            c = conn.cursor()
+            c.execute('''INSERT INTO blobs (path) VALUES (?)''', (blob,))
+            conn.commit()
+            c.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (c.lastrowid, user, 1, 1))
+            conn.commit()
+            conn.close()
+            
+            return True
+        except sqlite3.exceptions as e:
+            raise e
+
+    
     def remove_blob(self, blob_id):
         '''Eliminar blob de la base de datos'''
-        conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        c.execute('''DELETE FROM blobs WHERE id=?''', (blob_id,))
-        conn.commit()
-        c.execute('''DELETE FROM permissions WHERE blob_id=? ''', (blob_id,))
-        conn.close()
+        try:
+            conn = sqlite3.connect(self.db_path)
+            c = conn.cursor()
+            c.execute('''DELETE FROM blobs WHERE id=?''', (blob_id,))
+            conn.commit()
+            c.execute('''DELETE FROM permissions WHERE blob_id=? ''', (blob_id,))
+            conn.commit()
+            conn.close()
+            return True
+        except sqlite3.exceptions as e:
+            print(e)
+            return False
 
     def get_blob(self, blob_id):
         '''Obtener blob de la base de datos'''
@@ -48,21 +65,39 @@ class BlobDB():
         c = conn.cursor()
         c.execute('''SELECT path FROM blobs WHERE id=?''', (blob_id,))
         path = c.fetchone()
-        c.execute('''SELECT user_id FROM permissions WHERE blob_id=? AND readable_by=1''', (blob_id,))
-        readable_by = c.fetchall()
-        c.execute('''SELECT user_id FROM permissions WHERE blob_id=? AND writable_by=1''', (blob_id,))
-        writable_by = c.fetchall()
         conn.close()
-        return path, readable_by, writable_by
+        if path == None:
+            return None
+        else:
+            return path[0]
+
+    def update_blob_path(self, blob_id, blob):
+        try:
+            '''Actualizar blob'''
+            conn = sqlite3.connect(self.db_path)
+            c = conn.cursor()
+            c.execute('''UPDATE blobs SET path=? WHERE id=?''', (blob, blob_id))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(e)
+            return False
 
     def add_write_permission(self, blob_id, user):
-        '''Agregar permiso de escritura a un blob'''
+        '''Agregar permiso de escritura a un blob para un usuario y si no existe, crearlo'''
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        c.execute('''UPDATE permissions SET writable_by=1 WHERE blob_id=? AND user_id=?''', (blob_id, user))
-        conn.commit()
+        c.execute('''SELECT * FROM permissions WHERE blob_id=? AND user_id=?''', (blob_id, user))
+        permission = c.fetchone()
+        if permission == None:
+            c.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (blob_id, user, 0, 1))
+            conn.commit()
+        else:
+            c.execute('''UPDATE permissions SET writable_by=1 WHERE blob_id=? AND user_id=?''', (blob_id, user))
+            conn.commit()
         conn.close()
-
+        
     def revoke_write_permission(self, blob_id, user):
         '''Revocar permiso de escritura a un blob'''
         conn = sqlite3.connect(self.db_path)
@@ -72,11 +107,17 @@ class BlobDB():
         conn.close()
 
     def add_read_permission(self, blob_id, user):
-        '''Agregar permiso de lectura a un blob'''
+        '''Agregar permiso de lectura a un blob para un usuario y si no existe, crearlo'''
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        c.execute('''UPDATE permissions SET readable_by=1 WHERE blob_id=? AND user_id=?''', (blob_id, user))
-        conn.commit()
+        c.execute('''SELECT * FROM permissions WHERE blob_id=? AND user_id=?''', (blob_id, user))
+        permission = c.fetchone()
+        if permission == None:
+            c.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (blob_id, user, 1, 0))
+            conn.commit()
+        else:
+            c.execute('''UPDATE permissions SET readable_by=1 WHERE blob_id=? AND user_id=?''', (blob_id, user))
+            conn.commit()
         conn.close()
 
     def revoke_read_permission(self, blob_id, user):
@@ -94,13 +135,20 @@ class BlobDB():
         c.execute('''SELECT readable_by FROM permissions WHERE blob_id=? AND user_id=?''', (blob_id, user))
         permission = c.fetchone()
         conn.close()
-        return permission
+        if permission == None:
+            return False
+        else:
+            return True
     
     def have_write_permission(self, blob_id, user):
+
         '''Verificar si un usuario tiene permiso de escritura'''
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         c.execute('''SELECT writable_by FROM permissions WHERE blob_id=? AND user_id=?''', (blob_id, user))
         permission = c.fetchone()
         conn.close()
-        return permission
+        if permission == None:
+            return False
+        else:
+            return True
