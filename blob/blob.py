@@ -26,14 +26,13 @@ class BlobDB():
         conn.close()
 
 
-    def add_blob(self, blob, user):
+    def add_blob(self,blob_id, blob, user):
 
         '''Agregar blob a la base de datos'''
         try:
-            print('BLob: ', blob)
             conn = sqlite3.connect(self.db_path)
             c = conn.cursor()
-            c.execute('''INSERT INTO blobs (path) VALUES (?)''', (blob,))
+            c.execute('''INSERT INTO blobs (id, path) VALUES (?)''', (blob_id, blob,))
             conn.commit()
             c.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (c.lastrowid, user, 1, 1))
             conn.commit()

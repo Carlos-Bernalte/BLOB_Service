@@ -37,24 +37,76 @@ def delete_file(path):
     else:
         print('No existe el archivo')    
 
+
 @app.route('/v1/blob/<int:blob_id>', methods=['GET'])
 def get_blob(blob_id):
-    blob = db.get_blob(blob_id)
-    if blob is None:
-        return make_response('Blob not found', 404)
-    if db.have_read_permission(blob_id, request.headers['user-token']):
+    if 'user-token' not in request.headers:
+        return make_response('No user-token provided', 401)
+    user = user_of_token(request.headers['user-token'])
+
+    if 'admin-token' in request.headers:
+        # Check admin token Todo: implementar request.headers['user-token'] == args.admin
         path= db.get_blob(blob_id)
         return send_from_directory(os.path.dirname(path), os.path.basename(path))
     else:
-        return make_response('No read permission', 401)
+        if user is None:
+            return make_response('Invalid user-token', 401)
+
+        blob = db.get_blob(blob_id)
+        if blob is None:
+            return make_response('Blob not found', 404)
+
+        if db.have_read_permission(blob_id, request.headers['user-token']):
+            path = db.get_blob(blob_id)
+            return send_from_directory(os.path.dirname(path), os.path.basename(path))
+        else:
+            return make_response('No read permission', 401)      
     
-@app.route('/v1/blob', methods=['PUT'])
-def new_blob(blob_id=None):
     
+@app.route('/v1/blob/<int:blob_id>', methods=['PUT'])
+def new_blob(blob_id):
+    if 'user-token' not in request.headers:
+        return make_response('No user-token provided', 401)
+    user = user_of_token(request.headers['user-token'])
+
+    if user is None:
+        return make_response('Invalid user-token', 401)
+
     if 'blob' not in request.get_json():
-        return make_response('Missing "blob" key', 400)
-    blob = write_file(request.get_json()['blob'], args.storage)
-    if db.add_blob(blob, 1):
+        return make_response('Missing "blob" key', 400)    
+
+    if db.add_blob(blob_id, blob, user):
+        blob = write_file(request.get_json()['blob'], args.storage)
+        return make_response('OK', 200)
+    else:
+        return make_response('Error', 500)
+    
+@app.route('/v1/blob/<int:blob_id>', methods=['POST'])
+def update_blob(blob_id):
+
+    if 'user-token' not in request.headers:
+        return make_response('No user-token provided', 401)
+    user = user_of_token(request.headers['user-token'])
+
+    if 'admin-token' in request.headers:
+        # Check admin token Todo: implementar request.headers['user-token'] == args.admin
+        pass
+    else:
+        if user is None:
+            return make_response('Invalid user-token', 401)
+
+        blob = db.get_blob(blob_id)
+        if blob is None:
+            return make_response('Blob not found', 404)
+
+    blob=db.get_blob(blob_id)
+    if blob is None:
+        return make_response('Blob not found', 404)
+
+    blob_updated=write_file(request.get_json()['blob'], args.storage)
+    delete_file(blob)
+
+    if db.update_blob_path(int(blob_id), blob_updated):
         return make_response('OK', 200)
     else:
         return make_response('Error', 500)
@@ -63,6 +115,23 @@ def new_blob(blob_id=None):
 @app.route('/v1/blob/<int:blob_id>', methods=['DELETE'])
 def remove_blob(blob_id):
 
+    if 'user-token' not in request.headers:
+        return make_response('No user-token provided', 401)
+    user = user_of_token(request.headers['user-token'])
+
+    if 'admin-token' in request.headers:
+        # Check admin token Todo: implementar request.headers['user-token'] == args.admin
+        pass
+    else:
+        if user is None:
+            return make_response('Invalid user-token', 401)
+        elif not db.have_write_permission(blob_id, request.headers['user-token']):
+            return make_response('No write permission', 401)
+
+        blob = db.get_blob(blob_id)
+        if blob is None:
+            return make_response('Blob not found', 404)
+    
 
     blob=db.get_blob(blob_id)
     if blob is None:
@@ -73,40 +142,82 @@ def remove_blob(blob_id):
     else:
         return make_response('Error', 500)
 
-@app.route('/v1/blob/<int:blob_id>', methods=['POST'])
-def update_blob(blob_id):
 
-
-    blob=db.get_blob(blob_id)
-    if blob is None:
-        return make_response('Blob not found', 404)
-    blob_updated=write_file(request.get_json()['blob'], args.storage)
-
-    delete_file(blob)
-    if db.update_blob_path(int(blob_id), blob_updated):
-        return make_response('OK', 200)
-    else:
-        return make_response('Error', 500)
 
 @app.route('/v1/blob/<int:blob_id>/writable_by/<int:user>', methods=['PUT'])
-def add_write_permission(blob_id, user):
-    db.add_write_permission(int(blob_id), int(user))
+def add_write_permission(blob_id, user_priveleged):
+    if 'user-token' not in request.headers:
+        return make_response('No user-token provided', 401)
+    user = user_of_token(request.headers['user-token'])
+
+    if 'admin-token' in request.headers:
+        # Check admin token Todo: implementar request.headers['user-token'] == args.admin
+        pass
+    else:
+        if user is None:
+            return make_response('Invalid user-token', 401)
+        elif not db.have_write_permission(blob_id, request.headers['user-token']):
+            return make_response('No write permission', 401)
+            
+        blob = db.get_blob(blob_id)
+        if blob is None:
+            return make_response('Blob not found', 404)
+
+    db.add_write_permission(int(blob_id), int(user_priveleged))
     return make_response('OK', 200)
 
 @app.route('/v1/blob/<int:blob_id>/writable_by/<int:user>', methods=['DELETE'])
-def remove_write_permission(blob_id, user):
+def remove_write_permission(blob_id, user_priveleged):
+    if 'user-token' not in request.headers:
+        return make_response('No user-token provided', 401)
+    user = user_of_token(request.headers['user-token'])
+
+    if 'admin-token' in request.headers:
+        # Check admin token Todo: implementar request.headers['user-token'] == args.admin
+        pass
+    else:
+        if user is None:
+            return make_response('Invalid user-token', 401)
+        elif not db.have_write_permission(blob_id, request.headers['user-token']):
+            return make_response('No write permission', 401)
+            
+        blob = db.get_blob(blob_id)
+        if blob is None:
+            return make_response('Blob not found', 404)
+
     db.revoke_write_permission(int(blob_id), int(user))
     return make_response('OK', 200)
 
 @app.route('/v1/blob/<int:blob_id>/readable_by/<int:user>', methods=['PUT'])
-def add_read_permission(blob_id, user):
-    db.add_read_permission(int(blob_id), int(user))
+def add_read_permission(blob_id, user_priveleged):
+    db.add_read_permission(int(blob_id), int(user_priveleged))
     return make_response('OK', 200)
 
 @app.route('/v1/blob/<int:blob_id>/readable_by/<int:user>', methods=['DELETE'])
-def remove_read_permission(blob_id, user):
-    db.revoke_read_permission(int(blob_id), int(user))
+def remove_read_permission(blob_id, user_priveleged):
+
+    check_header_tokens(request, blob_id)
+
+    db.revoke_read_permission(int(blob_id), int(user_priveleged))
     return make_response('OK', 200)
+
+def check_header_tokens(request, blob_id):
+    if 'user-token' not in request.headers:
+        return make_response('No user-token provided', 401)
+    user = user_of_token(request.headers['user-token'])
+
+    if 'admin-token' in request.headers:
+        # Check admin token Todo: implementar request.headers['user-token'] == args.admin
+        pass
+    else:
+        if user is None:
+            return make_response('Invalid user-token', 401)
+        elif not db.have_write_permission(blob_id, request.headers['user-token']):
+            return make_response('No write permission', 401)
+            
+        blob = db.get_blob(blob_id)
+        if blob is None:
+            return make_response('Blob not found', 404)
 
 def arg_parser():
     '''Parsea los argumentos de entrada'''
