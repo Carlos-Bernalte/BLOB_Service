@@ -3,44 +3,6 @@
 '''
     Implementacion ejemplo de servidor y servicio REST para el servicio de blobs
 '''
-
-from flask import Flask, make_response, request
-import argparse
-
-app = Flask(__name__)
-
-@app.route('/v1/blob/<int:blob_id>', methods=['GET'])
-def get_blob(blob_id, user):
-    raise NotImplementedError()
-
-@app.route('/v1/blob', methods=['PUT'])
-def new_blob():
-    raise NotImplementedError()
-
-@app.route('/v1/blob/<int:blob_id>', methods=['DELETE'])
-def remove_blob(blob_id, user):
-    raise NotImplementedError()
-
-@app.route('/v1/blob/<int:blob_id>', methods=['POST'])
-def update_blob(blob_id, user):
-    raise NotImplementedError()
-
-@app.route('/v1/blob/<int:blob_id>/writable_by/<int:user>', methods=['PUT'])
-def add_write_permission(blob_id, user):
-    raise NotImplementedError()
-
-@app.route('/v1/blob/<int:blob_id>/writable_by/<int:user>', methods=['DELETE'])
-def remove_write_permission(blob_id, user):
-    raise NotImplementedError()
-
-@app.route('/v1/blob/<int:blob_id>/readable_by/<int:user>', methods=['PUT'])
-def add_read_permission(blob_id, user):
-    raise NotImplementedError()
-
-@app.route('/v1/blob/<int:blob_id>/readable_by/<int:user>', methods=['DELETE'])
-def remove_read_permission(blob_id, user):
-    raise NotImplementedError()
-
 from flask import Flask, make_response, request, send_from_directory
 import os
 import argparse
@@ -75,6 +37,23 @@ def delete_file(path):
     else:
         print('No existe el archivo')    
 
+def check_header_tokens(request, blob_id):
+    if 'user-token' not in request.headers:
+        return make_response('No user-token provided', 401)
+    user = user_of_token(request.headers['user-token'])
+
+    if 'admin-token' in request.headers:
+        # Check admin token Todo: implementar request.headers['user-token'] == args.admin
+        pass
+    else:
+        if user is None:
+            return make_response('Invalid user-token', 401)
+        elif not db.have_write_permission(blob_id, request.headers['user-token']):
+            return make_response('No write permission', 401)
+            
+        blob = db.get_blob(blob_id)
+        if blob is None:
+            return make_response('Blob not found', 404)
 
 @app.route('/v1/blob/<int:blob_id>', methods=['GET'])
 def get_blob(blob_id):
@@ -181,7 +160,6 @@ def remove_blob(blob_id):
         return make_response('Error', 500)
 
 
-
 @app.route('/v1/blob/<int:blob_id>/writable_by/<int:user>', methods=['PUT'])
 def add_write_permission(blob_id, user_priveleged):
     if 'user-token' not in request.headers:
@@ -239,34 +217,10 @@ def remove_read_permission(blob_id, user_priveleged):
     db.revoke_read_permission(int(blob_id), int(user_priveleged))
     return make_response('OK', 200)
 
-def check_header_tokens(request, blob_id):
-    if 'user-token' not in request.headers:
-        return make_response('No user-token provided', 401)
-    user = user_of_token(request.headers['user-token'])
-
-    if 'admin-token' in request.headers:
-        # Check admin token Todo: implementar request.headers['user-token'] == args.admin
-        pass
-    else:
-        if user is None:
-            return make_response('Invalid user-token', 401)
-        elif not db.have_write_permission(blob_id, request.headers['user-token']):
-            return make_response('No write permission', 401)
-            
-        blob = db.get_blob(blob_id)
-        if blob is None:
-            return make_response('Blob not found', 404)
-
 
 def arg_parser():
     '''Parsea los argumentos de entrada'''
     parser = argparse.ArgumentParser()
-
-    parser.add_argument('-a', '--admin', type=int, default=1234,help='Token de administrador')
-    parser.add_argument('-p', '--port', type=int, default=3002,help='Puerto para el servidor')
-    parser.add_argument('-l', '--listening', type=str, default='0.0.0.0',help='Direccion de escucha')
-    parser.add_argument('-d', '--db', type=str, default='./database.db',help='Base de datos')
-    parser.add_argument('-s', '--storage', type=str, default='./storage',help='Directorio de almacenamiento')
 
     parser.add_argument('-a', '--admin', type=str, default=secrets.token_hex(8),help='Token de administrador')
     parser.add_argument('-p', '--port', type=int, default=3002,help='Puerto para el servidor')

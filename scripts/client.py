@@ -22,9 +22,10 @@ class RestBlobError(Exception):
         
 class BlobService:
     '''Cliente de acceso al servicio de blobbing'''
-    def __init__(self,uri,timeout=120):
-        self.uri=uri
-        self.timeout=timeout
+    def __init__(self,uri):
+        self.root = uri
+        if not self.root.endswith('/'):
+            self.root = f'{self.root}/'
 
     def new_blob(self, local_filename, user):
         '''Crea un nuevo blob usando el usuario establecido'''
@@ -119,14 +120,3 @@ class Blob:
         else:
             print (response.text)
 
-
-
-def main():
-    '''Funcion principal'''
-    # Creamos un cliente para el servicio de blobbing
-    client = BlobService('http://0.0.0.0:3002')
-    client.new_blob('test.txt', 'user1')
-
-
-if __name__ == '__main__':
-    main()
