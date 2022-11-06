@@ -20,27 +20,28 @@ class BlobDB():
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         '''Si no existe la base de datos, crearla'''
-        c.execute('''CREATE TABLE blobs (id INTEGER PRIMARY KEY, path TEXT)''')
-        c.execute('''CREATE TABLE permissions (id INTEGER PRIMARY KEY, blob_id INTEGER, user_id INTEGER, readable_by INTEGER, writable_by INTEGER)''')
+        c.execute('''CREATE TABLE blobs (id STRING PRIMARY KEY, path TEXT)''')
+        c.execute('''CREATE TABLE permissions (id INTEGER PRIMARY KEY, blob_id STRING, user_id INTEGER, readable_by INTEGER, writable_by INTEGER)''')
         conn.commit()
         conn.close()
 
 
-    def add_blob(self,blob_id, blob, user):
+    def add_blob(self,blob_id, local_filename, user):
 
         '''Agregar blob a la base de datos'''
         try:
             conn = sqlite3.connect(self.db_path)
             c = conn.cursor()
-            c.execute('''INSERT INTO blobs (id, path) VALUES (?)''', (blob_id, blob,))
+            c.execute('''INSERT INTO blobs (id, path) VALUES (?,?)''', (blob_id, local_filename,))
             conn.commit()
-            c.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (c.lastrowid, user, 1, 1))
+            c.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (blob_id, user, 1, 1))
             conn.commit()
             conn.close()
             
             return True
-        except sqlite3.exceptions as e:
-            raise e
+        except Exception as e:
+            print(e)
+            return False
 
     
     def remove_blob(self, blob_id):

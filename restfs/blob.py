@@ -3,14 +3,9 @@
 '''
 
 import requests
+import wget
+from requests_toolbelt import MultipartEncoder
 import json
-
-headersList1 = {
- "user-token": "123"
-}
-headersList2 = {
- "admin-token": "1234"
-}
 
 class RestBlobError(Exception):
     '''Error caused by wrong responses from server'''
@@ -26,95 +21,81 @@ class BlobService:
         self.root = uri
         if not self.root.endswith('/'):
             self.root = f'{self.root}/'
-
-    def new_blob(self, local_filename, user):
-        '''Crea un nuevo blob usando el usuario establecido'''
-        payload = json.dumps({"path": "nombre.txt"})
-        response = requests.request("PUT", self.uri+'/v1/blob', data=payload,  headers=headersList1)
-        if response.status_code != 200:
-            raise RestBlobError(f'Unexpected status code: {response.status_code}')
+    
+    def validate_blob_id(self, blob_id, user):
+        '''Comprueba que el identificador de blob es valido'''
+        if requests.get(self.root+'v1/blob/'+blob_id, headers={'user-token':user}).status_code == 404:
+            self.blob_id = blob_id
+            return True
         else:
-            print (response.text)
+            return False
 
+    def new_blob(self,local_filename, user):
+        '''Crea un nuevo blob en formato json usando el usuario establecido'''
+
+        with open(local_filename, 'rb') as f:
+            req_body = {"file": {"filename": local_filename, "content": f.read().decode()}}
+            response = requests.put(self.root+'v1/blob/'+self.blob_id,
+                                    headers={'content-type': 'application/json','user-token': user},
+                                    data=json.dumps(req_body)
+                                    )
+            print (response.text)
+       
     def get_blob(self, blob_id, user):
-        '''Obtiene un blob usando el usuario indicado'''
-        response = requests.request("GET", self.uri+'/v1/blob' ,  headers=headersList1)
-        if response.status_code != 200:
-            raise RestBlobError(f'Unexpected status code: {response.status_code}')
-        else:
-            print (response.text)
+        '''Descarga un blob usando el usuario dado'''
+        response = requests.get( self.uri+'/v1/blob/'+blob_id ,  headers={'user-token': user})
+        print (response.text)
 
     def remove_blob(self, blob_id, user):
         '''Intenta eliminar un blob usando el usuario dado'''
-        response = requests.request("DELETE", self.uri+'/v1/blob' ,  headers=headersList1)
-        if response.status_code != 200:
-            raise RestBlobError(f'Unexpected status code: {response.status_code}')
-        else:
-            print (response.text)
+        response = requests.delete(self.root+'/v1/blob/'+blob_id ,  headers={'user-token': user})
+        
+        print (response.text)
 
 
 class Blob:
     '''Cliente para controlar un blob'''
-    def __init__(self, blob_id, path, read_users, write_users):
-        '''Crea una instancia de Blob'''
-        self.id = blob_id
-        self.path = path
-        self.readers = read_users
-        self.writers = write_users
-
+    def __init__(self, blob_id, blob_service, user):
+        self.blob_id = blob_id
+        self.blob_service = blob_service
+        self.user = user
+        
+            
     @property
     def is_online(self):
         '''Comprueba si el blob existe'''
-        response = None
-        if self==None:
-            return False
+        if self.blob_service != None:
+            return self.blob_service.validate_blob_id(self.blob_id, self.user)
         else:
-            if (requests.request("GET", self.uri+'/v1/blob' ,  headers=headersList1)==200):
-                return True
+            return False
 
     def dump_to(self, local_filename):
         '''Vuelca los datos del blob en un archivo local'''
-        response = requests.request("GET", self.uri+'/v1/blob' ,  headers=headersList1)
-        getBlob = requests.get(self.uri+'/v1/blob/<int:blob_id>') 
-        open("/dumps/<int:blob_id>", "wb").write(getBlob.content)
+        raise NotImplementedError
 
     def refresh_from(self, local_filename):
         '''Reemplaza el blob por el contenido del fichero local'''
-        response = requests.request("PUT", self.uri+'/v1/blob/<int:blob_id>',  headers=headersList1)
-        refreshFrom= requests.put(self.uri+'/v1/blob/<int:blob_id>', data=open("/dumps/<int:blob_id>", "rb"))
-        if response.status_code != 200:
-            raise RestBlobError(f'Unexpected status code: {response.status_code}')
-        else:
-            print (response.text)
+        self.blob_service.new_blob(local_filename,self.user)
+      
 
     def add_read_permission_to(self, user):
         '''Permite al usuario dado leer el blob'''
-        response = requests.request("PUT", self.uri+'/v1/blob/<int:blob_id>/readable_by/',  headers=headersList1)
-        if response.status_code != 200:
-            raise RestBlobError(f'Unexpected status code: {response.status_code}')
-        else:
-            print (response.text)
+        response = response= requests.put(self.blob_service.root+'/v1/blob/'+self.blob_id+'/readable_by/'+user,  headers={'user-token': self.user})
+        print (response.text)
 
     def revoke_read_permission_to(self, user):
         '''Elimina al usuario dado de la lista de permiso de lectura'''
-        response= requests.delete(self.uri+'/v1/blob/<int:blob_id>/readable_by/',  headers=headersList1)
-        if response.status_code != 200:
-            raise RestBlobError(f'Unexpected status code: {response.status_code}')
-        else:
-            print (response.text)
+        response= requests.delete(self.blob_service.root+'/v1/blob/'+self.blob_id+'/readable_by/'+user,  headers={'user-token': self.user})
+        print (response.text)
 
     def add_write_permission_to(self, user):
         '''Permite al usuario dado escribir el blob'''
-        response= requests.put(self.uri+'/v1/blob/<int:blob_id>/writable_by/', headers=headersList1)
-        if response.status_code != 200:
-            raise RestBlobError(f'Unexpected status code: {response.status_code}')
-        else:
-            print (response.text)
-
+        response= requests.put(self.blob_service.root+'/v1/blob/'+self.blob_id+'/writable_by/'+user, headers={'user-token': self.user})
+        print (response.text)
 
     def revoke_write_permission_to(self, user):
         '''Elimina al usuario dado de la lista de permiso de escritura'''
-        response= requests.delete(self.uri+'/v1/blob/<int:blob_id>/writable_by/', headers=headersList1)
+        response= requests.delete(self.blob_service.root+'/v1/blob/'+self.blob_id+'/writable_by/'+user, headers={'user-token': self.user})
         if response.status_code != 200:
             raise RestBlobError(f'Unexpected status code: {response.status_code}')
         else:
