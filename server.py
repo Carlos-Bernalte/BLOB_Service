@@ -6,7 +6,7 @@
 from flask import Flask, make_response, request, send_from_directory
 import os
 import argparse
-from blob.blob import BlobDB
+from blob.blobDB import BlobDB
 import secrets
 
 app = Flask('Blob Service')

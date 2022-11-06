@@ -2,14 +2,14 @@
 
 import unittest
 
-import blob.blob
+import blob.blobDB
 
 
 class TestBlobImplementation(unittest.TestCase):
 
     def test_creation(self):
         '''Test instantiation'''
-        myblob = blob.blob.Blob()
+        myblob = blobDB.blobDB.Blob()
         self.assertEqual(myblob.id, None)
 
     
