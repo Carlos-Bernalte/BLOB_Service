@@ -40,7 +40,7 @@ def add_read_permission(blob_id, user):
 @app.route('/v1/blob/<int:blob_id>/readable_by/<int:user>', methods=['DELETE'])
 def remove_read_permission(blob_id, user):
     raise NotImplementedError()
-=======
+
 from flask import Flask, make_response, request, send_from_directory
 import os
 import argparse
@@ -278,10 +278,6 @@ def arg_parser():
 
 def main():
     global app
-
-    args = arg_parser()
-    app.run(debug=True)
-
     global db
     global args
     args = arg_parser()
