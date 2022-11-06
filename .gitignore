@@ -2,7 +2,11 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Databases
 *.db
+storage
+
 # C extensions
 *.so
 storage
