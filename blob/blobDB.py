@@ -2,7 +2,7 @@
 
 import sqlite3
 import os
-import sys
+import uuid
 
 class BlobDB():
 
@@ -26,7 +26,7 @@ class BlobDB():
         conn.close()
 
 
-    def add_blob(self,blob_id, local_filename, user):
+    def add_blob(self,local_filename, user, blob_id=uuid.uuid4().hex):
 
         '''Agregar blob a la base de datos'''
         try:
@@ -38,10 +38,10 @@ class BlobDB():
             conn.commit()
             conn.close()
             
-            return True
+            return blob_id
         except Exception as e:
             print(e)
-            return False
+            return None
 
     
     def remove_blob(self, blob_id):
@@ -132,8 +132,10 @@ class BlobDB():
         '''Verificar si un usuario tiene permiso de lectura'''
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
+
         c.execute('''SELECT readable_by FROM permissions WHERE blob_id=? AND user_id=?''', (blob_id, user))
         permission = c.fetchone()
+        
         conn.close()
         if permission == None:
             return False

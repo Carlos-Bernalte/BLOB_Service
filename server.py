@@ -70,19 +70,17 @@ def get_blob(blob_id):
     else:
         if user is None:
             return make_response('Invalid user-token', 401)
-
         blob = db.get_blob(blob_id)
         if blob is None:
             return make_response('Blob not found', 404)
 
-        if db.have_read_permission(blob_id, request.headers['user-token']):
-            path = db.get_blob(blob_id)
-            return send_from_directory(os.path.dirname(path), os.path.basename(path))
+        if db.have_read_permission(blob_id, user):
+            return send_from_directory(os.path.dirname(blob), os.path.basename(blob))
         else:
             return make_response('No read permission', 401)      
     
     
-@app.route('/v1/blob/<blob_id>', methods=['PUT', 'POST'])
+@app.route('/v1/blob/<blob_id>', methods=['PUT'])
 def new_blob(blob_id):
     if not request.is_json:
         return make_response('No JSON provided', 400)
@@ -99,6 +97,25 @@ def new_blob(blob_id):
     if db.add_blob(blob_id, blob, user):
         
         return make_response('OK', 200)
+    else:
+        return make_response('Error', 500)
+
+@app.route('/v1/blob/', methods=['PUT'])
+def create_blob():
+    if not request.is_json:
+        return make_response('No JSON provided', 400)
+
+    if 'user-token' not in request.headers:
+        return make_response('No user-token provided', 401)
+    user = user_of_token(request.headers['user-token'])
+
+    if user is None:
+        return make_response('Invalid user-token', 401)
+
+    blob = write_file(request.get_json()['file'], args.storage)
+    blob_id = db.add_blob(blob, user)
+    if blob_id is not  None:
+        return make_response({'blob_id':blob_id}, 201)
     else:
         return make_response('Error', 500)
     
@@ -127,7 +144,7 @@ def update_blob(blob_id):
     blob_updated=write_file(request.get_json()['file'], args.storage)
     delete_file(blob)
 
-    if db.update_blob_path(int(blob_id), blob_updated):
+    if db.update_blob_path(blob_id, blob_updated):
         return make_response('OK', 200)
     else:
         return make_response('Error', 500)
