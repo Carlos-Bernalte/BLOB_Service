@@ -3,9 +3,9 @@
 '''
 
 import requests
-import wget
-from requests_toolbelt import MultipartEncoder
 import json
+import uuid
+
 
 class RestBlobError(Exception):
     '''Error caused by wrong responses from server'''
@@ -24,15 +24,15 @@ class BlobService:
 
     def new_blob(self,local_filename, user):
         '''Crea un nuevo blob en formato json usando el usuario establecido'''
-
+        blob_id = uuid.uuid4().hex
         with open(local_filename, 'rb') as f:
             req_body = {"file": {"filename": local_filename, "content": f.read().decode()}}
-            response = requests.put(self.root+'v1/blob/',
+            response = requests.put(self.root+'v1/blob/'+blob_id,
                                     headers={'content-type': 'application/json','user-token': user},
                                     data=json.dumps(req_body)
                                     )
             if response.status_code == 201:
-                return response.json()['blob_id']
+                return blob_id
             else:
                 raise RestBlobError(response.text)
        

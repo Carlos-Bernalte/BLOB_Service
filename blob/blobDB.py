@@ -26,7 +26,7 @@ class BlobDB():
         conn.close()
 
 
-    def add_blob(self,local_filename, user, blob_id=uuid.uuid4().hex):
+    def add_blob(self,blob_id,local_filename, user):
 
         '''Agregar blob a la base de datos'''
         try:

@@ -96,26 +96,7 @@ def new_blob(blob_id):
 
     if db.add_blob(blob_id, blob, user):
         
-        return make_response('OK', 200)
-    else:
-        return make_response('Error', 500)
-
-@app.route('/v1/blob/', methods=['PUT'])
-def create_blob():
-    if not request.is_json:
-        return make_response('No JSON provided', 400)
-
-    if 'user-token' not in request.headers:
-        return make_response('No user-token provided', 401)
-    user = user_of_token(request.headers['user-token'])
-
-    if user is None:
-        return make_response('Invalid user-token', 401)
-
-    blob = write_file(request.get_json()['file'], args.storage)
-    blob_id = db.add_blob(blob, user)
-    if blob_id is not  None:
-        return make_response({'blob_id':blob_id}, 201)
+        return make_response('OK', 201)
     else:
         return make_response('Error', 500)
     
