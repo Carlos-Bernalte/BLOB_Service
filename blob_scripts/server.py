@@ -11,51 +11,6 @@ import secrets
 
 app = Flask('Blob Service')
 
-def user_of_token(token):
-    if token == '123':
-        # print(token)
-        return "usuario_test"
-    else:
-        return None
-
-def write_file(blob, storage_path):
-    new_path = storage_path
-    paths = blob['filename'].split('/')
-
-    for path in paths:
-        if path == paths[-1]:
-            open(new_path + '/' + path, 'wb').write(blob['content'].encode())
-        else:
-            new_path = os.path.join(new_path, path)
-            if not os.path.exists(new_path):
-                os.makedirs(new_path)
-                
-    return os.path.join(storage_path, blob['filename'])
-
-def delete_file(path):
-    if os.path.exists(path):
-        os.remove(path)
-    else:
-        print('No existe el archivo')    
-
-def check_header_tokens(request, blob_id):
-    if 'user-token' not in request.headers:
-        return make_response('No user-token provided', 401)
-   
-    user = user_of_token(request.headers['user-token'])
-    if 'admin-token' in request.headers:
-        # Check admin token Todo: implementar request.headers['user-token'] == args.admin
-        pass
-    else:
-        
-        if user is None:
-            return make_response('Invalid user-token', 401)
-        elif not db.have_write_permission(blob_id, request.headers['user-token']):
-            return make_response('No write permission', 401)
-
-        blob = db.get_blob(blob_id)
-        if blob is None:
-            return make_response('Blob not found', 404)
 
 @app.route('/v1/blob/<blob_id>', methods=['GET'])
 def get_blob(blob_id):
@@ -77,8 +32,7 @@ def get_blob(blob_id):
         if db.have_read_permission(blob_id, user):
             return send_from_directory(os.path.dirname(blob), os.path.basename(blob))
         else:
-            return make_response('No read permission', 401)      
-    
+            return make_response('No read permission', 401)       
     
 @app.route('/v1/blob/<blob_id>', methods=['PUT'])
 def new_blob(blob_id):
@@ -130,7 +84,6 @@ def update_blob(blob_id):
     else:
         return make_response('Error', 500)
 
-
 @app.route('/v1/blob/<blob_id>', methods=['DELETE'])
 def remove_blob(blob_id):
 
@@ -160,7 +113,6 @@ def remove_blob(blob_id):
         return make_response('OK', 200)
     else:
         return make_response('Error', 500)
-
 
 @app.route('/v1/blob/<blob_id>/writable_by/<user_priveleged>', methods=['PUT'])
 def add_write_permission(blob_id, user_priveleged):
@@ -271,6 +223,52 @@ def arg_parser():
 
     return parser.parse_args()
 
+def user_of_token(token):
+    if token == '123':
+        # print(token)
+        return "usuario_test"
+    else:
+        return None
+
+def write_file(blob, storage_path):
+    new_path = storage_path
+    paths = blob['filename'].split('/')
+
+    for path in paths:
+        if path == paths[-1]:
+            open(new_path + '/' + path, 'wb').write(blob['content'].encode())
+        else:
+            new_path = os.path.join(new_path, path)
+            if not os.path.exists(new_path):
+                os.makedirs(new_path)
+                
+    return os.path.join(storage_path, blob['filename'])
+
+def delete_file(path):
+    if os.path.exists(path):
+        os.remove(path)
+    else:
+        print('No existe el archivo')    
+
+def check_header_tokens(request, blob_id):
+    if 'user-token' not in request.headers:
+        return make_response('No user-token provided', 401)
+   
+    user = user_of_token(request.headers['user-token'])
+    if 'admin-token' in request.headers:
+        # Check admin token Todo: implementar request.headers['user-token'] == args.admin
+        pass
+    else:
+        
+        if user is None:
+            return make_response('Invalid user-token', 401)
+        elif not db.have_write_permission(blob_id, request.headers['user-token']):
+            return make_response('No write permission', 401)
+
+        blob = db.get_blob(blob_id)
+        if blob is None:
+            return make_response('Blob not found', 404)
+
 def main():
     global app
     global db
@@ -285,8 +283,8 @@ def main():
         db = BlobDB(args.db, args.storage)
 
         app.run(host=args.listening, port=args.port, debug=True)
-    except Exception:
-        print('Bye')
+    except Exception as e:
+        print('Error: {}'.format(e.traceback.format_exc()))
         os.rmdir(args.storage)
 
 
