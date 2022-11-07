@@ -3,11 +3,13 @@
 '''
     Implementacion ejemplo de servidor y servicio REST para el servicio de blobs
 '''
-from flask import Flask, make_response, request, send_from_directory
-import os
 import argparse
-from blob.blobDB import BlobDB
+import os
 import secrets
+
+from flask import Flask, make_response, request, send_from_directory
+
+from blob.blobDB import BlobDB
 
 app = Flask('Blob Service')
 
