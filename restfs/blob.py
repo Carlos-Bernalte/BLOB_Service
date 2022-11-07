@@ -21,25 +21,20 @@ class BlobService:
         self.root = uri
         if not self.root.endswith('/'):
             self.root = f'{self.root}/'
-    
-    def validate_blob_id(self, blob_id, user):
-        '''Comprueba que el identificador de blob es valido'''
-        if requests.get(self.root+'v1/blob/'+blob_id, headers={'user-token':user}).status_code == 404:
-            self.blob_id = blob_id
-            return True
-        else:
-            return False
 
     def new_blob(self,local_filename, user):
         '''Crea un nuevo blob en formato json usando el usuario establecido'''
 
         with open(local_filename, 'rb') as f:
             req_body = {"file": {"filename": local_filename, "content": f.read().decode()}}
-            response = requests.put(self.root+'v1/blob/'+self.blob_id,
+            response = requests.put(self.root+'v1/blob/',
                                     headers={'content-type': 'application/json','user-token': user},
                                     data=json.dumps(req_body)
                                     )
-            print (response.text)
+            if response.status_code == 201:
+                return response.json()['blob_id']
+            else:
+                raise RestBlobError(response.text)
        
     def get_blob(self, blob_id, user):
         '''Descarga un blob usando el usuario dado'''
@@ -64,18 +59,33 @@ class Blob:
     @property
     def is_online(self):
         '''Comprueba si el blob existe'''
-        if self.blob_service != None:
-            return self.blob_service.validate_blob_id(self.blob_id, self.user)
-        else:
+        response= requests.get(self.blob_service.root+'/v1/blob/'+self.blob_id, headers={'user-token': self.user})
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 404:
             return False
 
     def dump_to(self, local_filename):
         '''Vuelca los datos del blob en un archivo local'''
-        raise NotImplementedError
+        response= requests.get(self.blob_service.root+'/v1/blob/'+self.blob_id, headers={'user-token': self.user})
+        if response.status_code == 200:
+            with open(local_filename, 'w') as f:
+                f.write(response.text)
+        else:
+            raise RestBlobError(f'Unexpected status code: {response.status_code}')
 
     def refresh_from(self, local_filename):
         '''Reemplaza el blob por el contenido del fichero local'''
-        self.blob_service.new_blob(local_filename,self.user)
+        with open(local_filename, 'rb') as f:
+            req_body = {"file": {"filename": local_filename, "content": f.read().decode()}}
+            response = requests.post(self.blob_service.root+'v1/blob/'+self.blob_id,
+                                    headers={'content-type': 'application/json','user-token': self.user},
+                                    data=json.dumps(req_body)
+                                    )
+            if response.status_code == 200:
+                return response.json()['blob_id']
+            else:
+                raise RestBlobError(response.text)
       
 
     def add_read_permission_to(self, user):
