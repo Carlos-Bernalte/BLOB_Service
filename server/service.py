@@ -1,8 +1,5 @@
-'''Crear base de datos para almacenar blobs con permisos de lectura y escritura'''
-
 import sqlite3
 import os
-import uuid
 
 class BlobDB():
 
@@ -10,6 +7,7 @@ class BlobDB():
         '''Inicializar base de datos'''
         self.db_path = db_path
         self.storage_path = storage_path
+
         if not os.path.exists(self.db_path):
             self._create_db()
         if not os.path.exists(self.storage_path):
@@ -24,12 +22,24 @@ class BlobDB():
         c.execute('''CREATE TABLE permissions (id INTEGER PRIMARY KEY, blob_id STRING, user_id INTEGER, readable_by INTEGER, writable_by INTEGER)''')
         conn.commit()
         conn.close()
+    def write_file(self, blob_id, blob_data):
+        blob_path = os.path.join(self.storage_path, blob_id)
+        blob_data.save(blob_path)
 
+        return blob_path
 
-    def add_blob(self,blob_id,local_filename, user):
+    def delete_file(self, path):
+        print('Intentando eliminar archivo', path)
+        if os.path.exists(path):
+            os.remove(path)
+        else:
+            print('No existe el archivo') 
+
+    def add_blob(self,blob_id,data, user):
 
         '''Agregar blob a la base de datos'''
         try:
+            local_filename = self.write_file(blob_id, data)
             conn = sqlite3.connect(self.db_path)
             c = conn.cursor()
             c.execute('''INSERT INTO blobs (id, path) VALUES (?,?)''', (blob_id, local_filename,))
@@ -37,7 +47,6 @@ class BlobDB():
             c.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (blob_id, user, 1, 1))
             conn.commit()
             conn.close()
-            
             return blob_id
         except Exception as e:
             print(e)
@@ -47,6 +56,7 @@ class BlobDB():
     def remove_blob(self, blob_id):
         '''Eliminar blob de la base de datos'''
         try:
+            self.delete_file(self.get_blob(blob_id))
             conn = sqlite3.connect(self.db_path)
             c = conn.cursor()
             c.execute('''DELETE FROM blobs WHERE id=?''', (blob_id,))
@@ -71,12 +81,14 @@ class BlobDB():
         else:
             return path[0]
 
-    def update_blob_path(self, blob_id, blob):
+    def update_blob_path(self, blob_id, data):
         try:
             '''Actualizar blob'''
+            self.delete_file(self.get_blob(blob_id))
+            local_filename = self.write_file(data, self.storage_path)
             conn = sqlite3.connect(self.db_path)
             c = conn.cursor()
-            c.execute('''UPDATE blobs SET path=? WHERE id=?''', (blob, blob_id))
+            c.execute('''UPDATE blobs SET path=? WHERE id=?''', (local_filename, blob_id))
             conn.commit()
             conn.close()
             return True
@@ -154,3 +166,4 @@ class BlobDB():
             return False
         else:
             return True
+

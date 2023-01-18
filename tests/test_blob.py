@@ -1,6 +1,6 @@
 import unittest
 
-from blob.blobDB import BlobDB
+from server.service import BlobDB
 
 
 class TestBlobImplementation(unittest.TestCase):

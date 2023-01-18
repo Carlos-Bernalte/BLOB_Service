@@ -2,7 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+common
+auth.py
+directory.py
 # Databases
 *.db
 storage
@@ -110,8 +112,11 @@ celerybeat.pid
 .venv
 env/
 venv/
-ENV/
-env.bak/
+ENV/'''Funcion para sumar dos numeros'''
+
+
+def suma(a, b):
+    return a + b
 venv.bak/
 
 # Spyder project settings
