@@ -3,8 +3,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 common
-auth.py
-directory.py
 # Databases
 *.db
 storage

@@ -1,6 +1,7 @@
 import sqlite3
 import os
 
+from common.errors import *
 class BlobDB():
 
     def __init__(self, db_path, storage_path):
@@ -8,49 +9,49 @@ class BlobDB():
         self.db_path = db_path
         self.storage_path = storage_path
 
-        if not os.path.exists(self.db_path):
-            self._create_db()
-        if not os.path.exists(self.storage_path):
-            os.makedirs(self.storage_path)
+        self._create_db()
+
+        os.makedirs(self.storage_path, exist_ok=True)
+
+
 
     def _create_db(self):
         '''Crear base de datos'''
         conn = sqlite3.connect(self.db_path)
-        c = conn.cursor()
-        '''Si no existe la base de datos, crearla'''
-        c.execute('''CREATE TABLE blobs (id STRING PRIMARY KEY, path TEXT)''')
-        c.execute('''CREATE TABLE permissions (id INTEGER PRIMARY KEY, blob_id STRING, user_id INTEGER, readable_by INTEGER, writable_by INTEGER)''')
-        conn.commit()
+        conn.execute('''CREATE TABLE IF NOT EXISTS blobs (id STRING PRIMARY KEY, path TEXT)''')
+        conn.execute('''CREATE TABLE IF NOT EXISTS permissions (id INTEGER PRIMARY KEY, blob_id STRING, user_id INTEGER, readable_by INTEGER, writable_by INTEGER)''')
         conn.close()
+
     def write_file(self, blob_id, blob_data):
         blob_path = os.path.join(self.storage_path, blob_id)
         blob_data.save(blob_path)
-
         return blob_path
 
     def delete_file(self, path):
-        print('Intentando eliminar archivo', path)
         if os.path.exists(path):
             os.remove(path)
         else:
-            print('No existe el archivo') 
+            raise ObjectNotFound(path) 
 
     def add_blob(self,blob_id,data, user):
 
         '''Agregar blob a la base de datos'''
-        try:
-            local_filename = self.write_file(blob_id, data)
-            conn = sqlite3.connect(self.db_path)
-            c = conn.cursor()
-            c.execute('''INSERT INTO blobs (id, path) VALUES (?,?)''', (blob_id, local_filename,))
-            conn.commit()
-            c.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (blob_id, user, 1, 1))
-            conn.commit()
-            conn.close()
-            return blob_id
-        except Exception as e:
-            print(e)
-            return None
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''SELECT path FROM blobs WHERE id=?''', (blob_id,))
+
+        if c.fetchone() is not None:
+            raise ObjectAlreadyExists(blob_id)
+
+        local_filename = self.write_file(blob_id, data)
+
+        conn.execute('''INSERT INTO blobs (id, path) VALUES (?,?)''', (blob_id, local_filename,))
+        conn.execute('''INSERT INTO permissions (blob_id, user_id, readable_by, writable_by) VALUES (?, ?, ?, ?)''', (blob_id, user, 1, 1))
+        conn.commit()
+        conn.close()
+
+        return blob_id
+
 
     
     def remove_blob(self, blob_id):
@@ -58,12 +59,10 @@ class BlobDB():
         try:
             self.delete_file(self.get_blob(blob_id))
             conn = sqlite3.connect(self.db_path)
-            c = conn.cursor()
-            c.execute('''DELETE FROM blobs WHERE id=?''', (blob_id,))
-            conn.commit()
-            c.execute('''DELETE FROM permissions WHERE blob_id=? ''', (blob_id,))
-            conn.commit()
+            conn.execute('''DELETE FROM blobs WHERE id=?''', (blob_id,))
+            conn.execute('''DELETE FROM permissions WHERE blob_id=? ''', (blob_id,))
             conn.close()
+
             return True
         except sqlite3.exceptions as e:
             print(e)
@@ -76,21 +75,21 @@ class BlobDB():
         c.execute('''SELECT path FROM blobs WHERE id=?''', (blob_id,))
         path = c.fetchone()
         conn.close()
-        if path == None:
-            return None
+        if path is None:
+            raise ObjectNotFound(blob_id)
         else:
             return path[0]
 
-    def update_blob_path(self, blob_id, data):
+    def update_blob(self, blob_id, data):
         try:
             '''Actualizar blob'''
             self.delete_file(self.get_blob(blob_id))
-            local_filename = self.write_file(data, self.storage_path)
+            local_filename = self.write_file(blob_id, data)
             conn = sqlite3.connect(self.db_path)
-            c = conn.cursor()
-            c.execute('''UPDATE blobs SET path=? WHERE id=?''', (local_filename, blob_id))
+            conn.execute('''UPDATE blobs SET path=? WHERE id=?''', (local_filename, blob_id))
             conn.commit()
             conn.close()
+
             return True
         except Exception as e:
             print(e)
@@ -116,7 +115,8 @@ class BlobDB():
         c = conn.cursor()
         c.execute('''UPDATE permissions SET writable_by=0 WHERE blob_id=? AND user_id=?''', (blob_id, user))
         conn.commit()
-        conn.close()
+        conn.close
+
 
     def add_read_permission(self, blob_id, user):
         '''Agregar permiso de lectura a un blob para un usuario y si no existe, crearlo'''
@@ -138,25 +138,29 @@ class BlobDB():
         c = conn.cursor()
         c.execute('''UPDATE permissions SET readable_by=0 WHERE blob_id=? AND user_id=?''', (blob_id, user))
         conn.commit()
-        conn.close()
+        conn.close
+
     
     def have_read_permission(self, blob_id, user):
         '''Verificar si un usuario tiene permiso de lectura'''
+        if user == 'admin':
+            return True  
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
 
         c.execute('''SELECT readable_by FROM permissions WHERE blob_id=? AND user_id=?''', (blob_id, user))
         permission = c.fetchone()
-        
         conn.close()
         if permission == None:
             return False
         else:
             return True
+        
     
     def have_write_permission(self, blob_id, user):
-
         '''Verificar si un usuario tiene permiso de escritura'''
+        if user == 'admin':
+            return True       
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         c.execute('''SELECT writable_by FROM permissions WHERE blob_id=? AND user_id=?''', (blob_id, user))
