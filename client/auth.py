@@ -2,6 +2,17 @@
     Interfaces para el acceso a la API rest del servicio de autenticacion
 '''
 from common.errors import Unauthorized
+from common.constants import USER_TOKEN, ADMIN_TOKEN
+
+def header_name(user):
+    '''Get proper header name or raise an error'''
+    if user[0]=='u':
+        return {USER_TOKEN: user}
+    elif user[0]=='a':
+        return {ADMIN_TOKEN: user}
+    else:
+        raise Unauthorized(user, 'No se ha identificado su header-token')
+
 
 class Administrator:
     '''Cliente de autenticacion como administrador'''
@@ -41,15 +52,16 @@ class AuthService:
     def user_of_token(self, token):
         if token == 'u12345678':
             return "usuario1"
-        elif token == 'u23456789':
+        elif token == 'u2345678':
             return "usuario2"
         else:
-         raise Unauthorized
+            raise Unauthorized(token, 'User not found')
+
     def is_admin(self, token):
-        if token == '321':
-            return 'admin'
+        if token == 'a12345678':
+            return True
         else:
-            raise Unauthorized()
+            False
             
     def exists_user(self, username):
         '''Return if given user exists or not'''

@@ -18,19 +18,22 @@ app = Flask('Blob Service')
 AUTH = get_AuthService('0.0.0.0:3001')
 
 def check_headers(headers):
-
-    if headers.get('user-token', None)!=None:
-        token = headers.get('user-token')
+    if headers.get(USER_TOKEN, None)!=None:
+        token = headers.get(USER_TOKEN)
         return AUTH.user_of_token(token)
-    elif headers.get('admin-token', None)!=None:
-        token = headers.get('admin-token')
+    elif headers.get(ADMIN_TOKEN, None)!=None:
+        token = headers.get(ADMIN_TOKEN)
         if AUTH.is_admin(token):
             return ADMIN
+        else:
+            raise Unauthorized(token, 'Invalid admin token')
     else:
-        raise Unauthorized()
-    return None
+        raise MissingMandatoryArgument()
+
 
 def check_permission(blob_id, user, permission):
+    if user is ADMIN:
+        return True
     if permission == WRITABLE and db.have_write_permission(blob_id, user):
         return True
     if permission == READABLE and db.have_read_permission(blob_id, user):
@@ -42,15 +45,22 @@ def check_permission(blob_id, user, permission):
 def get_blob(blob_id):
     try:
         user = check_headers(request.headers)
-        blob = db.get_blob(blob_id)
-        if blob is None:
-            return make_response('Blob not found', 404)
 
-        return send_from_directory(os.path.dirname(blob), os.path.basename(blob)), 200
+        blob_path = db.get_blob(blob_id)
+
+        if not check_permission(blob_id, user, READABLE):
+            raise Unauthorized(user, 'Has no permission')
+        
+
+        return send_from_directory(os.path.dirname(blob_path), os.path.basename(blob_path)), 200
     except Unauthorized as e:
         return make_response(str(e), 401)
-    except ObjectAlreadyExists as e:
-        return make_response(str(e), 409)
+    except ObjectNotFound as e:
+        return make_response(str(e), 404)
+    except Exception as e:
+        print('[ERROR] ',e)
+        return make_response(str(e), 500)
+        
 
     
 @app.route('/v1/blob/<blob_id>', methods=['PUT'])
@@ -61,10 +71,15 @@ def new_blob(blob_id):
         db.add_blob(blob_id, request.files[blob_id], user)
         return make_response('OK', 201)
 
+    except MissingMandatoryArgument as e:
+        return make_response(str(e), 400)
     except Unauthorized as e:
         return make_response(str(e), 401)
     except ObjectAlreadyExists as e:
         return make_response(str(e), 409)
+    except Exception as e:
+        print('[ERROR] ',e)
+        return make_response(str(e), 500)
 
 
     
@@ -73,75 +88,107 @@ def update_blob(blob_id):
     try:
         user = check_headers(request.headers)
         
-        if db.update_blob(blob_id, request.files[blob_id]):
-            return make_response('OK', 201)
-        else:
-            return make_response('Error', 500)
+        blob_path=db.get_blob(blob_id)
+
+        if not check_permission(blob_id, user, WRITABLE):
+            raise Unauthorized(user, 'Has no permission')
+
+        db.update_blob(blob_id, request.files[blob_id])
+
     except Unauthorized as e:
         return make_response(str(e), 401)
-    except ObjectAlreadyExists as e:
-        return make_response(str(e), 409)
-
+    except ObjectNotFound as e:
+        return make_response(str(e), 404)
+    except Exception as e:
+        print('[ERROR] ',e)
+        return make_response(str(e), 500)
 
 @app.route('/v1/blob/<blob_id>', methods=['DELETE'])
 def remove_blob(blob_id):
 
     try:
         user = check_headers(request.headers)
-    
-        blob=db.get_blob(blob_id)
-        if blob is None:
-            return make_response('Blob not found', 404)
+        db.get_blob(blob_id)
+        if not check_permission(blob_id, user, WRITABLE):
+            raise Unauthorized(user, 'Has no permission')
+        
+        db.remove_blob(blob_id)
 
-        if db.remove_blob(blob_id):
-            return make_response('OK', 200)
-        else:
-            return make_response('Error', 500)
+
     except Unauthorized as e:
         return make_response(str(e), 401)
-    except ObjectAlreadyExists as e:
-        return make_response(str(e), 409)
+    except ObjectNotFound as e:
+        return make_response(str(e), 404)
+    except Exception as e:
+        print('[ERROR] ',e)
+        return make_response(str(e), 500)
 
 
 @app.route('/v1/blob/<blob_id>/writable_by/<user_priveleged>', methods=['PUT', 'DELETE'])
-def add_write_permission(blob_id, user_priveleged):
+def write_permission(blob_id, user_priveleged):
     try:
         user = check_headers(request.headers)
-    
+        user_priveleged_id = AUTH.user_of_token(user_priveleged)
+        db.get_blob(blob_id)
+        if not check_permission(blob_id, user, WRITABLE):
+            raise Unauthorized(user, 'Has no permission')
+
         if request.method == 'PUT':
-            db.add_write_permission(blob_id, user_priveleged)
+            if check_permission(blob_id, user_priveleged_id, WRITABLE):
+                raise AlreadyDoneError(user_priveleged_id+ ' already has write permission.', 204)
+            db.add_write_permission(blob_id, user_priveleged_id)
             return make_response('OK', 200)
         elif request.method == 'DELETE':
-            db.revoke_write_permission(blob_id, user_priveleged)
+            if not check_permission(blob_id, user_priveleged_id, WRITABLE):
+                raise AlreadyDoneError(user_priveleged_id+ ' already has no write permission.', 404)
+            db.revoke_write_permission(blob_id, user_priveleged_id)
             return make_response('OK', 200)
         else:
             return make_response('Bad request', 300)
     except Unauthorized as e:
         return make_response(str(e), 401)
-    except ObjectAlreadyExists as e:
-        return make_response(str(e), 409)
+    except ObjectNotFound as e:
+        return make_response(str(e), 404)
+    except AlreadyDoneError as e:
+        return make_response(str(e), e._status)
+    except Exception as e:
+        print('[ERROR] ',e)
+        return make_response(str(e), 500)
 
 
 
 @app.route('/v1/blob/<blob_id>/readable_by/<user_priveleged>', methods=['PUT', 'DELETE'])
-def add_read_permission(blob_id, user_priveleged):
+def read_permission(blob_id, user_priveleged):
 
     try:
         user = check_headers(request.headers)
+        user_priveleged_id = AUTH.user_of_token(user_priveleged)
+        db.get_blob(blob_id)
+        if not check_permission(blob_id, user, WRITABLE):
+            raise Unauthorized(user, 'Has no permission')
 
         if request.method == 'PUT':
-            db.add_read_permission(blob_id, user_priveleged)
+            if check_permission(blob_id, user_priveleged_id, READABLE):
+                raise AlreadyDoneError(user_priveleged_id+ ' already has read permission.', 204)
+            db.add_read_permission(blob_id, user_priveleged_id)
             return make_response('OK', 200)
         elif request.method == 'DELETE':
-            db.revoke_read_permission(blob_id, user_priveleged)
+            if not check_permission(blob_id, user_priveleged_id, READABLE):
+                raise AlreadyDoneError(user_priveleged_id+ ' already has no read permission.', 404)
+            db.revoke_read_permission(blob_id, user_priveleged_id)
             return make_response('OK', 200)
         else:
             return make_response('Bad request', 300)
         
     except Unauthorized as e:
         return make_response(str(e), 401)
-    except ObjectAlreadyExists as e:
-        return make_response(str(e), 409)
+    except ObjectNotFound as e:
+        return make_response(str(e), 404)
+    except AlreadyDoneError as e:
+        return make_response(str(e), e._status)
+    except Exception as e:
+        print('[ERROR] ',e)
+        return make_response(str(e), 500)
 
 
 
