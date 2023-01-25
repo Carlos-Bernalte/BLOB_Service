@@ -44,7 +44,7 @@ class BlobService:
 
     def remove_blob(self, blob_id, user=None):
         '''Intenta eliminar un blob usando el usuario dado'''
-        headers=header_name(self.user)
+        headers=header_name(user)
         response = requests.delete(self.root+blob_id ,  headers=headers)
         
         if response.status_code == 404:

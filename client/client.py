@@ -74,11 +74,10 @@ def test_revoke_permission(blob_service, user_to_revoke, user=USER_TOKEN):
 
 def test_refresh_blob(file,blob_service, user=USER_TOKEN):
     print('*** Test refresh_blob')
-    for blob in BLOBS:
-        blob=WRONG_BLOB
-        b=blob_service.get_blob(blob, user)
-        b.refresh_from(file)
-        print('[BLOB]:',blob,' -- [REFRESHED]')
+    blob=BLOBS[1]
+    b=blob_service.get_blob(blob, user)
+    b.refresh_from(file)
+    print('[BLOB]:',blob,' -- [REFRESHED]')
 
 def test_remove_blob(blob_service,user=USER_TOKEN):
     print('*** Test remove_blob')
@@ -97,8 +96,8 @@ def tests():
     test_add_permission(blob_service, USER2_TOKEN, user=user)
     test_revoke_permission(blob_service, USER2_TOKEN, user=user)
     test_refresh_blob('requirements.txt', blob_service, user=user)
-    # test_remove_blob(blob_service)
-    # test_is_online(blob_service)
+    test_remove_blob(blob_service)
+    test_is_online(blob_service)
 
 
 

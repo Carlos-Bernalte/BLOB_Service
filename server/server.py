@@ -94,6 +94,7 @@ def update_blob(blob_id):
             raise Unauthorized(user, 'Has no permission')
 
         db.update_blob(blob_id, request.files[blob_id])
+        return make_response('OK', 204)
 
     except Unauthorized as e:
         return make_response(str(e), 401)
@@ -113,7 +114,7 @@ def remove_blob(blob_id):
             raise Unauthorized(user, 'Has no permission')
         
         db.remove_blob(blob_id)
-
+        return make_response('OK', 200)
 
     except Unauthorized as e:
         return make_response(str(e), 401)

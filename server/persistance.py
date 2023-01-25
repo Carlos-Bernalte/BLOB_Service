@@ -4,14 +4,13 @@ from common.constants import ADMIN
 from common.errors import *
 class BlobDB:
 
-    def __init__(self, db_path='./database.db', storage_path='./storage/'):
+    def __init__(self, db_path='database.db', storage_path='./storage/'):
         '''Inicializar base de datos'''
-        self.db_path = db_path
         self.storage_path = storage_path
-
-        self._create_db()
-
         os.makedirs(self.storage_path, exist_ok=True)
+        
+        self.db_path = self.storage_path+db_path
+        self._create_db()        
 
     def _create_db(self):
         '''Crear base de datos'''
