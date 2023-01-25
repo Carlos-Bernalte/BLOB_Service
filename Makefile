@@ -1,10 +1,10 @@
 all: clean run-server
 
 run-server:
-	python -m server.server
+	python3 -m server.server
 
 run-client:
-	python -m client.client
+	python3 -m client.client
 	
 test:
 	tox

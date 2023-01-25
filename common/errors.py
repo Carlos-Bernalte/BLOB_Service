@@ -59,7 +59,7 @@ class AlreadyDoneError(Exception):
     '''Action already done'''
     def __init__(self, msg=None, status=None):
         self._msg_ = msg
-        self._status = status
+        self.status = status
 
     def __str__(self):
         return 'Requested action is already done' + (
