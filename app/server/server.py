@@ -11,7 +11,7 @@ from flask import Flask, make_response, request, send_from_directory
 from client import get_AuthService
 from server.persistance import BlobDB
 from common.errors import ObjectNotFound, ObjectAlreadyExists, Unauthorized, MissingMandatoryArgument, AlreadyDoneError
-from common.constants import USER_TOKEN, ADMIN_TOKEN, ADMIN, READABLE, HTTPS_DEBUG_MODE, STORAGE_DEFAULT, DB_NAME
+from common.constants import USER_TOKEN, ADMIN_TOKEN, ADMIN, READABLE, HTTPS_DEBUG_MODE, STORAGE_DEFAULT, DB_NAME, DEFAULT_HOST
 
 APP = Flask('Blob Service')
 AUTH = get_AuthService('0.0.0.0:3001')
@@ -150,13 +150,12 @@ def arg_parser():
     parser.add_argument('-p', '--port', type=int,
                         default=3002, help='Puerto para el servidor')
     parser.add_argument('-l', '--listening', type=str,
-                        default='127.0.0.1', help='Direccion de escucha')
+                        default=DEFAULT_HOST, help='Direccion de escucha')
     parser.add_argument('-d', '--db', type=str,
                         default=DB_NAME, help='Base de datos')
     parser.add_argument('-s', '--storage', type=str,
                         default=STORAGE_DEFAULT, help='Directorio de almacenamiento')
     return parser.parse_args()
-
 
 def main():
     '''Funcion principal'''
