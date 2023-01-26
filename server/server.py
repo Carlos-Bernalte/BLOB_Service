@@ -183,7 +183,7 @@ def arg_parser():
     parser.add_argument('-p', '--port', type=int,
                         default=3002, help='Puerto para el servidor')
     parser.add_argument('-l', '--listening', type=str,
-                        default='0.0.0.0', help='Direccion de escucha')
+                        default='127.0.0.1', help='Direccion de escucha')
     parser.add_argument('-d', '--db', type=str,
                         default='./database.db', help='Base de datos')
     parser.add_argument('-s', '--storage', type=str,
@@ -199,7 +199,7 @@ def main():
     try:
         print('ADMIN TOKEN: ',args.admin)
         BLOB = BlobDB(args.db, args.storage)
-        APP.run(host=args.listening, port=args.port, debug=True)
+        APP.run(host=args.listening, port=args.port, debug=False)
     except Exception as error: # pylint: disable=broad-except
         print('[ERROR] ', error.with_traceback())
         os.rmdir(args.storage)
