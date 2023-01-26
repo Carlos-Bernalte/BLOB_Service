@@ -11,10 +11,11 @@ from flask import Flask, make_response, request, send_from_directory
 from client import get_AuthService
 from server.persistance import BlobDB
 from common.errors import ObjectNotFound, ObjectAlreadyExists, Unauthorized, MissingMandatoryArgument, AlreadyDoneError
-from common.constants import USER_TOKEN, ADMIN_TOKEN, ADMIN, WRITABLE, READABLE
+from common.constants import USER_TOKEN, ADMIN_TOKEN, ADMIN, READABLE, HTTPS_DEBUG_MODE, STORAGE_DEFAULT, DB_NAME
 
 APP = Flask('Blob Service')
 AUTH = get_AuthService('0.0.0.0:3001')
+BLOB = BlobDB()
 
 def check_headers(headers):
     ''' Chequea que el header tenga un token de usuario o de admin'''
@@ -28,23 +29,13 @@ def check_headers(headers):
         raise Unauthorized(token, 'Invalid admin token')
     raise MissingMandatoryArgument()
 
-def check_permission(blob_id, user, permission):
-    ''' Chequea que el usuario tenga permiso de lectura o escritura sobre el blob'''
-    if user is ADMIN:
-        return True
-    if permission == WRITABLE and BLOB.have_write_permission(blob_id, user):
-        return True
-    if permission == READABLE and BLOB.have_read_permission(blob_id, user):
-        return True
-    return False
-
 @APP.route('/v1/blob/<blob_id>', methods=['GET'])
 def get_blob(blob_id):
     ''' Devuelve el blob con el id dado si el usuario tiene permiso de lectura o es admin'''
     try:
         user = check_headers(request.headers)
-        blob_path = BLOB.get_blob(blob_id)
-        if not check_permission(blob_id, user, READABLE):
+        blob_path = BLOB.exits_blob(blob_id)
+        if not BLOB.check_permissions(blob_id, user, READABLE):
             raise Unauthorized(user, 'Has no permission')
         return send_from_directory(os.path.dirname(blob_path), os.path.basename(blob_path)), 200
     except Unauthorized as error:
@@ -78,10 +69,7 @@ def update_blob(blob_id):
     ''' Actualiza el blob con el id dado'''
     try:
         user = check_headers(request.headers)
-        BLOB.get_blob(blob_id)
-        if not check_permission(blob_id, user, WRITABLE):
-            raise Unauthorized(user, 'Has no permission')
-        BLOB.update_blob(blob_id, request.files[blob_id])
+        BLOB.update_blob(blob_id, request.files[blob_id], user)
         return make_response('OK', 204)
     except Unauthorized as error:
         return make_response(str(error), 401)
@@ -96,10 +84,7 @@ def remove_blob(blob_id):
     ''' Elimina el blob con el id dado'''
     try:
         user = check_headers(request.headers)
-        BLOB.get_blob(blob_id)
-        if not check_permission(blob_id, user, WRITABLE):
-            raise Unauthorized(user, 'Has no permission')
-        BLOB.remove_blob(blob_id)
+        BLOB.remove_blob(blob_id, user)
         return make_response('OK', 200)
     except Unauthorized as error:
         return make_response(str(error), 401)
@@ -115,20 +100,11 @@ def write_permission(blob_id, user_priveleged): # pylint: disable=too-many-retur
     try:
         user = check_headers(request.headers)
         user_priveleged_id = AUTH.user_of_token(user_priveleged)
-        BLOB.get_blob(blob_id)
-        if not check_permission(blob_id, user, WRITABLE):
-            raise Unauthorized(user, 'Has no permission')
         if request.method == 'PUT':
-            if check_permission(blob_id, user_priveleged_id, WRITABLE):
-                raise AlreadyDoneError(
-                    user_priveleged_id + ' already has write permission.', 204)
-            BLOB.add_write_permission(blob_id, user_priveleged_id)
+            BLOB.add_write_permission(blob_id, user, user_priveleged_id)
             return make_response('OK', 200)
         if request.method == 'DELETE':
-            if not check_permission(blob_id, user_priveleged_id, WRITABLE):
-                raise AlreadyDoneError(
-                    user_priveleged_id + ' already has no write permission.', 404)
-            BLOB.revoke_write_permission(blob_id, user_priveleged_id)
+            BLOB.revoke_write_permission(blob_id, user, user_priveleged_id)
             return make_response('OK', 200)
         return make_response('Bad request', 300)
     except Unauthorized as error:
@@ -148,20 +124,11 @@ def read_permission(blob_id, user_priveleged): # pylint: disable=too-many-return
     try:
         user = check_headers(request.headers)
         user_priveleged_id = AUTH.user_of_token(user_priveleged)
-        BLOB.get_blob(blob_id)
-        if not check_permission(blob_id, user, WRITABLE):
-            raise Unauthorized(user, 'Has no permission')
         if request.method == 'PUT':
-            if check_permission(blob_id, user_priveleged_id, READABLE):
-                raise AlreadyDoneError(
-                    user_priveleged_id + ' already has read permission.', 204)
-            BLOB.add_read_permission(blob_id, user_priveleged_id)
+            BLOB.add_read_permission(blob_id, user,user_priveleged_id)
             return make_response('OK', 200)
         if request.method == 'DELETE':
-            if not check_permission(blob_id, user_priveleged_id, READABLE):
-                raise AlreadyDoneError(
-                    user_priveleged_id + ' already has no read permission.', 404)
-            BLOB.revoke_read_permission(blob_id, user_priveleged_id)
+            BLOB.revoke_read_permission(blob_id, user,user_priveleged_id)
             return make_response('OK', 200)
         return make_response('Bad request', 300)
     except Unauthorized as error:
@@ -185,21 +152,19 @@ def arg_parser():
     parser.add_argument('-l', '--listening', type=str,
                         default='127.0.0.1', help='Direccion de escucha')
     parser.add_argument('-d', '--db', type=str,
-                        default='./database.db', help='Base de datos')
+                        default=DB_NAME, help='Base de datos')
     parser.add_argument('-s', '--storage', type=str,
-                        default='./storage/', help='Directorio de almacenamiento')
+                        default=STORAGE_DEFAULT, help='Directorio de almacenamiento')
     return parser.parse_args()
 
 
 def main():
     '''Funcion principal'''
-    global APP
-    global BLOB
     args = arg_parser()
     try:
         print('ADMIN TOKEN: ',args.admin)
-        BLOB = BlobDB(args.db, args.storage)
-        APP.run(host=args.listening, port=args.port, debug=False)
+        BLOB.initialize(args.db, args.storage)
+        APP.run(host=args.listening, port=args.port, debug=HTTPS_DEBUG_MODE)
     except Exception as error: # pylint: disable=broad-except
         print('[ERROR] ', error.with_traceback())
         os.rmdir(args.storage)
