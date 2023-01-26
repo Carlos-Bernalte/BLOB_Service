@@ -9,6 +9,8 @@ USER_TOKEN = 'user-token'
 WRITABLE = 'writable_by'
 READABLE = 'readable_by'
 
+DB_NAME = 'database.db'
+STORAGE_DEFAULT = './storage/'
 HTTPS_DEBUG_MODE = True
 
 DEFAULT_AUTH_SERVICE_PORT = 3001
