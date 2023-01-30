@@ -1,0 +1,19 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: blob-deployment
+spec:
+  selector:
+    matchLabels:
+      app: blob
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: blob
+    spec:
+      containers:
+      - name: blob
+        image: theangelogarci/miapp
+        ports:
+        - containerPort: 3002
