@@ -81,3 +81,7 @@ python deploy.py
 sudo firewall-cmd --list-all
 kubectl get all -A
 ```
+```bash
+kubectl apply -f ./deployment.yaml
+kubectl expose deployment <> --type=NodePort
+```
