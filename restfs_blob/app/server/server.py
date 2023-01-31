@@ -39,6 +39,7 @@ def routeApp(app, BLOB, AUTH): # pylint: disable=too-many-statements
             blob_path = BLOB.exits_blob(blob_id)
             if not BLOB.check_permissions(blob_id, user, READABLE):
                 raise Unauthorized(user, 'Has no permission')
+            print(os.path.dirname(blob_path), os.path.basename(blob_path))
             return send_from_directory(os.path.dirname(blob_path), os.path.basename(blob_path)), 200
         except Unauthorized as error:
             return make_response(str(error), 401)
@@ -146,7 +147,7 @@ def routeApp(app, BLOB, AUTH): # pylint: disable=too-many-statements
 class BlobService:
     '''Wrap all components used by the service'''
     def __init__(self, storage_path, auth_service, host='0.0.0.0', port=3002):
-        self._blobdb_ = BlobDB(storage_path)
+        self._blobdb_ = BlobDB(storage_path=storage_path)
         self._auth_ = get_AuthService(auth_service)
 
         self._host_ = host

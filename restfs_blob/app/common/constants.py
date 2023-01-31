@@ -10,7 +10,7 @@ WRITABLE = 'writable_by'
 READABLE = 'readable_by'
 
 DB_NAME = 'database.db'
-STORAGE_DEFAULT = './storage/'
+STORAGE_DEFAULT = '/storage/'
 HTTPS_DEBUG_MODE = True
 DEFAULT_HOST = '0.0.0.0'
 DEFAULT_AUTH_SERVICE_PORT = 3001

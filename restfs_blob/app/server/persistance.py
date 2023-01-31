@@ -16,21 +16,13 @@ class BlobDB:
         else:
             self.storage_path = storage_path
         self.db_path = self.storage_path+db_path
-
-    def initialize(self, db_path=None, storage_path=None):
-        '''Inicializar base de datos'''
-        if storage_path is not None:
-            if not storage_path.endswith('/'):
-                self.storage_path = storage_path+'/'
-            else:
-                self.storage_path = storage_path
-        if db_path is not None:
-            self.db_path = self.storage_path+db_path
         os.makedirs(self.storage_path, exist_ok=True)
         self._create_db()
+        
 
     def _create_db(self):
         '''Crear base de datos'''
+        print('SDASDASDASSDADdddd', self.db_path)
         conn = sqlite3.connect(self.db_path)
         conn.execute(
             '''CREATE TABLE IF NOT EXISTS blobs (id STRING PRIMARY KEY, path TEXT)''')

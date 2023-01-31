@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
 
-'''RestFS errors'''
-
-
-## Exit codes
-
-NO_ERROR = 0
-CMDCLI_ERROR = 1
-CONNECTION_ERROR = 2
-UNAUTHORIZED = 3
-
 ## Custom exceptions
 
 
@@ -67,8 +57,9 @@ class UnexpectedError(Exception):
 
 class AlreadyDoneError(Exception):
     '''Action already done'''
-    def __init__(self, msg=None):
+    def __init__(self, msg=None, status=None):
         self._msg_ = msg
+        self.status = status
 
     def __str__(self):
         return 'Requested action is already done' + (

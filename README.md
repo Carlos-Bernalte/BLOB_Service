@@ -36,9 +36,9 @@ Contenido del script:
 ```bash
 #Script build
 echo "*** Creando la imagen..."
-docker build --rm --tag miapp .
+docker build -f restfs_blob/Dockerfile -t blob-service:latest restfs_blob
 echo "\n*** Comprimiendo la imagen..."
-docker save miapp | gzip > tar.gz
+docker save blob-service:latest | gzip > tar.gz
 echo "*** Imagen comprimida --> tar.gz"
 ```
 
@@ -54,7 +54,7 @@ Contenido del script:
 #Script run
 echo "*** Ejecutando contenedor"
 mkdir -p volume
-docker run --privileged -ti -d --name blobs --hostname blobs_service -p 3002:3002 -v $(pwd)/volume:/storage miapp 
+docker run -ti -d --name blob -p 3002:3002 -v $(pwd)/volume:/storage blob-service:latest
 ```
 
 # Comprobar funcionamiento
