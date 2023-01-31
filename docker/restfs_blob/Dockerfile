@@ -9,4 +9,4 @@ RUN apt-get update && \
 COPY /app .
 RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 3002
-ENTRYPOINT ["python3", "-m", "server.server"]
+ENTRYPOINT ["python3", "-m", "server.server", "http://127.0.0.1:3001"]
