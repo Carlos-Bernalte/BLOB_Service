@@ -82,6 +82,11 @@ kubectl version
 
 ## Script deploy
 Para esta practica se pide realizar un script que ejecute los manifiestos para levantar los distintos servicios. Este script aceptara por parametros los valores de los archivos de configuración de los `servicios` y los `depliegues`.
+El script se ha programado en python por lo que se necesita de la libreria `kubernetes` para python:
+```bash
+pip install kubernetes
+```
+Para ejecutar el script (si no se incluyen argumentos se buscara por default los que se encuentran en el directorio raiz del repositorio):
 
 ```bash
 python deploy.py -s services.yaml -d deplotments.yaml
