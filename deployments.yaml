@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+spec:
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+      - name: auth
+        image: auth-service
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blobs
+spec:
+  selector:
+    matchLabels:
+      app: blobs
+  template:
+    metadata:
+      labels:
+        app: blobs
+    spec:
+      containers:
+      - name: blobs
+        image: blob-service
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dirs
+spec:
+  selector:
+    matchLabels:
+      app: dirs
+  template:
+    metadata:
+      labels:
+        app: dirs
+    spec:
+      containers:
+      - name: dirs
+        image: dirs-service
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3003

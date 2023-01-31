@@ -31,16 +31,25 @@ Repositorio:
 git clone https://github.com/Carlos-Bernalte/BLOB_Service.git
 ```
 # Plataforma
-## Microk8s
-La aplicación que utilizaremos para gestionar kubernetes es `microk8s v1.18.20` la cual incluye tanto un cliente para configurar los pods, nodos,... como tambien herramientas para añadir nodos al cluster de manera facil y sencilla.
 ## Maquinas Virtuales
-Para la creación del cluster hemos optado por utilizar [Ubuntu Server 20.04 ](https://releases.ubuntu.com/20.04/) con los requisitos mencionados anteriormente. En el siguiente enlace adjuntamos ambas maquinas (la del `director` y el de `workers`) ya preconfiguradas con los paquetes y archivos necesarios (`setup.sh`) para su correcto funcionamiento:
-
-- [enlace](https://github.com/)
-
-A continución explicaremos como poner en funcionamiento el cluster ejecutando un par de comandos en los nodos `director` y el nodo `worker`. Se recomienda acceder a ellos vía `SSH` para copiar y pegar los comandos que se veran en la siguientes secciones.
+Para la creación del cluster hemos optado por utilizar [Ubuntu Server 20.04 ](https://releases.ubuntu.com/20.04/) con los requisitos mencionados anteriormente. A continución explicaremos como poner en funcionamiento el cluster ejecutando un par de comandos en los nodos `director` y el nodo `worker`. Se recomienda acceder a ellos vía `SSH` (instalar openssh) para copiar y pegar los comandos que se veran en la siguientes secciones.
 - Nodo director-> login/password= director
 - Nodo worker-> login/password= worker
+
+## Microk8s, Docker y Firewall
+La aplicación que utilizaremos para gestionar kubernetes es `microk8s v1.18.20` la cual incluye tanto un cliente para configurar los pods, nodos,... como tambien herramientas para añadir nodos al cluster de manera facil y sencilla. Para instalarla:
+```bash
+sudo snap install microk8s --classic --channel=1.18/stable
+```
+Tambien sera aconsejable instalar firewalld para controlar el tema de puertos para que se puedan comunicar los nodos:
+```bash
+sudo apt install firewalld -y
+```
+## Requisitos
+Deberemos ejecutar el script `build.sh` para generar todas las imagenes de los contenedores de los servicios y luego importarlos a la maquina `director` con el siguiente comando:
+```bash
+
+```
 
 ## Nodo director
 En la carpeta `$HOME` de `director` se encuentra el comando `setup.sh` el cual abrira los puertos necesarios para que podamos acceder a las herramientas del cluster. Tambien exportara la configuración del cluster en un archivo `config` al directorio creado `.kube`.
