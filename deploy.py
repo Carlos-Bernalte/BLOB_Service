@@ -1,20 +1,46 @@
 from kubernetes import client,config,utils
 import argparse
 
-def main():
+
+yaml_file = 'deployments.yaml'
+
+def create_services(yaml_file):
+    print('*** Creating services...')
     config.load_kube_config()
     k8s_client = client.ApiClient()
-    yaml_file = 'services.yaml'
-    yaml_file = 'deployments.yaml'
-    utils.create_from_yaml(k8s_client,yaml_file,verbose=True)
+    services = utils.create_from_yaml(k8s_client,yaml_file,verbose=True)
+
+def deploy_services(yaml_file):
+    print('*** Deploying services...')
+    config.load_kube_config()
+    k8s_client = client.ApiClient()
+    utils.create_from_yaml(k8s_client, yaml_file,verbose=True)
+
+def args_parser():
+    '''Parse command line'''
+    parser = argparse.ArgumentParser(description=__doc__)
+
+    parser.add_argument(
+        '-s', '--services', type=str, default='services.yaml',
+        help='Configuration file (default: %(default)s)', dest='services'
+    )
+    parser.add_argument(
+        '-d', '--deployments', type=str, default='deployments.yaml',
+        help='Configuration file (default: %(default)s)', dest='deployments'
+    )
+    args = parser.parse_args()
+    return args
 
 if __name__ == "__main__":
 
-    # argparser = argparse.ArgumentParser()
-    # argparser.add_argument('--host', type=str, required=True)
-    # try:
-    #     open(argparser.config)
-    # except FileNotFoundError:
-    #     print('File not found')
+    args = args_parser()
+    try:
+        open(args.services, 'r').close()
+        open(args.deployments, 'r').close()
+        create_services(args.services)
+        deploy_services(args.deployments)
+    except FileNotFoundError as e:
+        print(e)
 
-    main()
+
+    

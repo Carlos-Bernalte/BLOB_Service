@@ -13,28 +13,26 @@ spec:
     spec:
       containers:
       - name: auth
-        image: auth-service
-        imagePullPolicy: Never
+        image: theangelogarci/auth-service:entrega3
         ports:
         - containerPort: 3001
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: blobs
+  name: blob
 spec:
   selector:
     matchLabels:
-      app: blobs
+      app: blob
   template:
     metadata:
       labels:
-        app: blobs
+        app: blob
     spec:
       containers:
-      - name: blobs
-        image: blob-service
-        imagePullPolicy: Never
+      - name: blob
+        image: theangelogarci/blob-service:entrega3
         ports:
         - containerPort: 3002
 ---
@@ -53,7 +51,6 @@ spec:
     spec:
       containers:
       - name: dirs
-        image: dirs-service
-        imagePullPolicy: Never
+        image: theangelogarci/dirs-service:entrega3
         ports:
         - containerPort: 3003

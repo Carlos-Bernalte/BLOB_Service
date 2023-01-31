@@ -6,9 +6,9 @@
 
 from typing import Union
 
-from client.auth import AuthService, Administrator, User
-from client.blob import BlobService, Blob
-from client.directory import DirectoryService, Directory
+from restfs_client.auth import AuthService, Administrator, User
+from restfs_client.blob import BlobService, Blob
+from restfs_client.directory import DirectoryService, Directory
 
 
 ## Service access factory ##

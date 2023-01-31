@@ -7,7 +7,7 @@ spec:
     app: auth
   ports:
   - protocol: "TCP"
-    port: 6000
+    port: 6001
     targetPort: 3001
   type: NodePort
 
@@ -22,7 +22,7 @@ spec:
     app: blob
   ports:
   - protocol: "TCP"
-    port: 6000
+    port: 6002
     targetPort: 3002
   type: NodePort
 
@@ -37,7 +37,7 @@ spec:
     app: dirs
   ports:
   - protocol: "TCP"
-    port: 6000
+    port: 6003
     targetPort: 3003
   type: NodePort
 

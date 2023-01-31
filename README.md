@@ -81,17 +81,16 @@ kubectl version
 ```
 
 ## Script deploy
-Para esta practica se pide realizar un script que ejecute los manifiestos para levantar los distintos servicios.
+Para esta practica se pide realizar un script que ejecute los manifiestos para levantar los distintos servicios. Este script aceptara por parametros los valores de los archivos de configuración de los `servicios` y los `depliegues`.
 
 ```bash
 python deploy.py -s services.yaml -d deplotments.yaml
 ```
-## Comandos chachis
+Al finalizar el despliegue puede que se demore en descargar (tuvimos que subirlo a Docker-Hub ya que nos nos dejaba pullearlos desde el repositorio local) y levantar los contenedores pero se puede comprobar el estado del cluster con:
 ```bash
-sudo firewall-cmd --list-all
 kubectl get all -A
 ```
+O bien desde el nodo `director`:
 ```bash
-kubectl apply -f ./deployment.yaml
-kubectl expose deployment <> --type=NodePort
+microk8s kubectl get all -A
 ```
