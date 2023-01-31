@@ -6,8 +6,7 @@ RUN apt-get update && \
     python3-pip \
     && \
     apt-get clean
-RUN mkdir /data
-VOLUME ["/data"]
-COPY ./app .
+COPY /app .
 RUN pip install --no-cache-dir -r requirements.txt
-ENTRYPOINT ["python3", "-m", "server.server"]
+EXPOSE 3001
+ENTRYPOINT ["python3", "-m", "restfs_auth.server"]

@@ -2,12 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
-tar.gz
+*.gz
+config
 Makefile
 # Databases
 *.db
 storage
-volume
 # tox outputs
 bandit_report.xml
 coverage_report.xml
