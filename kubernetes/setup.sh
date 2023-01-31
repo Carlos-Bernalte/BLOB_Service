@@ -5,6 +5,6 @@ sudo systemctl restart firewalld.service > /dev/null
 sudo docker load -i auth-service.tar
 sudo docker load -i blob-service.tar
 sudo docker load -i dirs-service.tar
-mkdir -p .kube
-microk8s config > .kube/config
-microk8s add-node
+sudo mkdir -p .kube
+sudo microk8s config > .kube/config
+sudo microk8s add-node
