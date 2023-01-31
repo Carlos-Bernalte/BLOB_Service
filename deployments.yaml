@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+spec:
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+      - name: auth
+        image: theangelogarci/auth-service:entrega3
+        ports:
+        - containerPort: 3001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blob
+spec:
+  selector:
+    matchLabels:
+      app: blob
+  template:
+    metadata:
+      labels:
+        app: blob
+    spec:
+      containers:
+      - name: blob
+        image: theangelogarci/blob-service:entrega3
+        ports:
+        - containerPort: 3002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dirs
+spec:
+  selector:
+    matchLabels:
+      app: dirs
+  template:
+    metadata:
+      labels:
+        app: dirs
+    spec:
+      containers:
+      - name: dirs
+        image: theangelogarci/dirs-service:entrega3
+        ports:
+        - containerPort: 3003

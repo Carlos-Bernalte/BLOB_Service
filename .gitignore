@@ -4,6 +4,9 @@ __pycache__/
 *$py.class
 tar.gz
 Makefile
+config
+*.gz
+*.tar
 # Databases
 *.db
 storage
