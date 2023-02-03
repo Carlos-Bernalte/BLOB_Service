@@ -9,7 +9,7 @@ spec:
   - protocol: "TCP"
     port: 6001
     targetPort: 3001
-  type: NodePort
+  type: ClusterIp
 
 ---
 
@@ -24,7 +24,7 @@ spec:
   - protocol: "TCP"
     port: 6002
     targetPort: 3002
-  type: NodePort
+  type: ClusterIp
 
 ---
 
@@ -39,5 +39,5 @@ spec:
   - protocol: "TCP"
     port: 6003
     targetPort: 3003
-  type: NodePort
+  type: ClusterIp
 
